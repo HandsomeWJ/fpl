@@ -10,7 +10,7 @@ def main():
     access_token = get_access_token()
     if access_token:
         emails = fetch_and_filter_emails(access_token)
-        print(f"Fetched {len(emails)} emails.")  # Add this line to check if emails are fetched
+        # print(f"Fetched {len(emails)} emails.")  # Add this line to check if emails are fetched
         headers = {'Authorization': f'Bearer {access_token}'}
         for email in emails:
             email_id = email['id']
@@ -28,7 +28,7 @@ def main():
                     transfer_pairs, unmatched_in = match_transfers(players_out, players_in)
 
                     if transfer_pairs:
-                        print("Matched Transfers (Out -> In):")
+                        print("Transfers (Out -> In):")
                         for out_player, out_position, in_player, in_position in transfer_pairs:
                             print(f"{out_player} ({out_position}) -> {in_player} ({in_position})")
 
