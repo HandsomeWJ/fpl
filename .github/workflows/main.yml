@@ -1,10 +1,12 @@
 name: FPL Transfer Automation
 
 on:
+  schedule:
+    - cron: '25 1 * * *'  # This is 9:25 AM Singapore Time (SGT) (1:25 AM UTC)
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
   fpl-automation:
