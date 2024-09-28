@@ -3,7 +3,7 @@ from auth import get_access_token
 from email_handler import fetch_and_filter_emails, extract_players
 from transfer_handler import match_transfers, create_transfer_payload
 from fpl_api import get_current_gameweek
-from config import CLIENT_ID
+from config import TEAM_ID
 import requests
 
 def main():
@@ -11,7 +11,7 @@ def main():
     if access_token:
         emails = fetch_and_filter_emails(access_token)
         headers = {'Authorization': f'Bearer {access_token}'}
-        
+
         for email in emails:
             email_id = email['id']
             email_body_endpoint = f"https://graph.microsoft.com/v1.0/me/messages/{email_id}"
@@ -35,7 +35,7 @@ def main():
                         # Create transfer payload
                         event = get_current_gameweek()
                         # print(f"Using Gameweek: {event}")
-                        transfer_payload = create_transfer_payload(transfer_pairs, '10337428', event)
+                        transfer_payload = create_transfer_payload(transfer_pairs, TEAM_ID, event)
                         print(transfer_payload)
 
                     if unmatched_in:
