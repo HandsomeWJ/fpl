@@ -1,0 +1,39 @@
+name: FPL Transfer Automation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  fpl-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step to set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Run the Python script using secrets
+      - name: Run FPL Transfer Script
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          TENANT_ID: ${{ secrets.TENANT_ID }}
+          AUTHORITY: ${{ secrets.AUTHORITY }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          TOKEN_CACHE_JSON: ${{ secrets.TOKEN_CACHE_JSON }}
+        run: |
+          python main.py
