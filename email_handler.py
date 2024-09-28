@@ -36,9 +36,6 @@ def fetch_and_filter_emails(access_token):
         all_emails.extend(emails)
         junk_folder_endpoint = response.json().get('@odata.nextLink')
 
-    # Log the number of emails retrieved
-    print(f"Fetched {len(all_emails)} emails.")
-    
     # Return all emails fetched
     return all_emails
 

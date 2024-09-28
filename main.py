@@ -10,8 +10,8 @@ def main():
     access_token = get_access_token()
     if access_token:
         emails = fetch_and_filter_emails(access_token)
-        # print(f"Fetched {len(emails)} emails.")  # Add this line to check if emails are fetched
         headers = {'Authorization': f'Bearer {access_token}'}
+        
         for email in emails:
             email_id = email['id']
             email_body_endpoint = f"https://graph.microsoft.com/v1.0/me/messages/{email_id}"
