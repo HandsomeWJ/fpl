@@ -1,0 +1,5 @@
+msal
+requests
+beautifulsoup4
+python-dotenv
+fuzzywuzzy
