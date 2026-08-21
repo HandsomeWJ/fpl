@@ -18,16 +18,23 @@ Rules implemented:
 
 Required environment variables:
   FIX_COOKIE   - Cookie header value for fantasyfootballfix.com (e.g. "sessionid=...")
-  FPL_COOKIE   - Cookie header value for fantasy.premierleague.com (e.g. "pl_profile=...; datadome=...")
+  FPL_REFRESH_TOKEN - OAuth refresh token from the FPL site (localStorage oidc.user entry)
+  FPL_COOKIE   - optional fallback: Cookie header for fantasy.premierleague.com
   FPL_ENTRY    - your FPL entry (team) id
   TARGET_MANAGER - display name on the reveal page (default "Tom Dollimore")
   DRY_RUN      - "1" = don't submit anything, just log what would happen
+
+Auth: FPL moved to OAuth (account.premierleague.com). The script exchanges the refresh
+token for a short-lived access token and sends it as a Bearer header (no cookies needed).
+Rotated tokens are persisted in the repo Actions variable FPL_TOKENS so the automation
+keeps itself logged in across runs.
 """
 
 import json
 import os
 import re
 import sys
+import time
 import unicodedata
 from datetime import datetime, timezone
 
@@ -36,6 +43,8 @@ from bs4 import BeautifulSoup
 
 FIX_URL = "https://www.fantasyfootballfix.com/reveal/"
 FPL = "https://fantasy.premierleague.com"
+PL_TOKEN_URL = "https://account.premierleague.com/as/token"
+PL_CLIENT_ID = "bfcbaf69-aade-4c1b-8f00-c1cb8a193030"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36")
 
@@ -130,16 +139,102 @@ def fetch_fix_manager(name):
     return {"chips": chips, "transfers": transfers, "updated": updated, "gw": gw}
 
 
-# ---------------------------------------------------------------- fpl side
+# ---------------------------------------------------------------- fpl auth
+def _gh_headers():
+    return {"Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN', '')}",
+            "Accept": "application/vnd.github+json"}
+
+
+def _gh_var_url(name=""):
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    return f"https://api.github.com/repos/{repo}/actions/variables" + (f"/{name}" if name else "")
+
+
+def load_saved_tokens():
+    if not os.environ.get("GITHUB_REPOSITORY"):
+        return None
+    try:
+        r = requests.get(_gh_var_url("FPL_TOKENS"), headers=_gh_headers(), timeout=30)
+        if r.status_code == 200:
+            return json.loads(r.json()["value"])
+    except Exception as e:
+        log(f"[tokens] could not load saved tokens: {e}")
+    return None
+
+
+def save_tokens(tokens):
+    if not os.environ.get("GITHUB_REPOSITORY"):
+        return
+    try:
+        body = {"name": "FPL_TOKENS", "value": json.dumps(tokens)}
+        r = requests.patch(_gh_var_url("FPL_TOKENS"), headers=_gh_headers(), json=body, timeout=30)
+        if r.status_code == 404:
+            r = requests.post(_gh_var_url(), headers=_gh_headers(), json=body, timeout=30)
+        if r.status_code >= 400:
+            log(f"[tokens] could not persist tokens: {r.status_code} {r.text[:200]}")
+    except Exception as e:
+        log(f"[tokens] could not persist tokens: {e}")
+
+
+def refresh_access_token(refresh_token):
+    r = requests.post(PL_TOKEN_URL,
+                      data={"grant_type": "refresh_token",
+                            "refresh_token": refresh_token,
+                            "client_id": PL_CLIENT_ID},
+                      headers={"User-Agent": UA,
+                               "Content-Type": "application/x-www-form-urlencoded"},
+                      timeout=60)
+    return r
+
+
+def get_fpl_access_token():
+    """Return a valid access token, refreshing and persisting as needed. None if no OAuth set up."""
+    tokens = load_saved_tokens()
+    now = time.time()
+    if tokens and tokens.get("expires_at", 0) - now > 600 and tokens.get("access_token"):
+        return tokens["access_token"]
+    candidates = []
+    if tokens and tokens.get("refresh_token"):
+        candidates.append(tokens["refresh_token"])
+    seed = os.environ.get("FPL_REFRESH_TOKEN")
+    if seed and seed not in candidates:
+        candidates.append(seed)
+    for rt in candidates:
+        r = refresh_access_token(rt)
+        if r.status_code < 400:
+            j = r.json()
+            new = {"access_token": j["access_token"],
+                   "refresh_token": j.get("refresh_token", rt),
+                   "expires_at": now + int(j.get("expires_in", 3600))}
+            save_tokens(new)
+            log("[tokens] refreshed FPL access token.")
+            return new["access_token"]
+        log(f"[tokens] refresh attempt failed: {r.status_code} {r.text[:200]}")
+    if candidates:
+        raise RuntimeError("FPL token refresh failed for all stored refresh tokens - "
+                           "log in to fantasy.premierleague.com again and update the "
+                           "FPL_REFRESH_TOKEN secret.")
+    return None
+
+
 def fpl_session():
     s = requests.Session()
     s.headers.update({
         "User-Agent": UA,
-        "Cookie": os.environ["FPL_COOKIE"],
         "Referer": "https://fantasy.premierleague.com/",
         "Origin": "https://fantasy.premierleague.com",
         "Accept": "application/json",
     })
+    token = get_fpl_access_token()
+    if token:
+        s.headers["Authorization"] = f"Bearer {token}"
+        s.headers["X-API-Authorization"] = f"Bearer {token}"
+    elif os.environ.get("FPL_COOKIE"):
+        s.headers["Cookie"] = os.environ["FPL_COOKIE"]
+        log("[auth] no OAuth token available - falling back to FPL_COOKIE.")
+    else:
+        raise RuntimeError("No FPL auth configured: set FPL_REFRESH_TOKEN (preferred) "
+                           "or FPL_COOKIE.")
     return s
 
 
@@ -152,7 +247,7 @@ def get_bootstrap(s):
 def get_my_team(s, entry):
     r = s.get(f"{FPL}/api/my-team/{entry}/", timeout=60)
     if r.status_code in (401, 403):
-        raise RuntimeError(f"FPL auth failed ({r.status_code}) - FPL cookie has likely expired.")
+        raise RuntimeError(f"FPL auth failed ({r.status_code}): {r.text[:200]}")
     r.raise_for_status()
     return r.json()
 
@@ -174,22 +269,37 @@ def build_player_index(bootstrap):
     return idx
 
 
-def match_player(idx, name, bootstrap):
+def match_player(idx, name, bootstrap, restrict_ids=None, etype=None):
+    """Match a Fix display name to an FPL element.
+
+    Same-name safety: candidates are filtered by squad membership (restrict_ids, used
+    for OUT players - the player must be in my squad) and position (etype, used for IN
+    players - FPL transfers are always like-for-like by position). If more than one
+    candidate survives and the leader isn't clearly the intended one (>=3x the ownership
+    of the runner-up), return the string "ambiguous" so the transfer is skipped and
+    reported instead of guessing.
+    """
     key = norm_name(name)
     cands = idx.get(key, [])
+    if not cands:
+        # fuzzy: containment either way
+        cands = [e for e in bootstrap["elements"]
+                 if key and (key in norm_name(e["web_name"]) or norm_name(e["web_name"]) in key)]
+    if restrict_ids is not None:
+        cands = [e for e in cands if e["id"] in restrict_ids]
+    if etype is not None:
+        cands = [e for e in cands if e["element_type"] == etype]
+    cands = list({e["id"]: e for e in cands}.values())
+    if not cands:
+        return None
     if len(cands) == 1:
         return cands[0]
-    if len(cands) > 1:
-        # disambiguate by higher ownership
-        return max(cands, key=lambda e: float(e.get("selected_by_percent") or 0))
-    # fuzzy: containment either way
-    all_matches = [e for e in bootstrap["elements"]
-                   if key and (key in norm_name(e["web_name"]) or norm_name(e["web_name"]) in key)]
-    if len(all_matches) == 1:
-        return all_matches[0]
-    if len(all_matches) > 1:
-        return max(all_matches, key=lambda e: float(e.get("selected_by_percent") or 0))
-    return None
+    ranked = sorted(cands, key=lambda e: float(e.get("selected_by_percent") or 0), reverse=True)
+    top, second = float(ranked[0].get("selected_by_percent") or 0), \
+        float(ranked[1].get("selected_by_percent") or 0)
+    if top >= 3 * max(second, 0.1):
+        return ranked[0]
+    return "ambiguous"
 
 
 # ---------------------------------------------------------------- main logic
@@ -296,10 +406,27 @@ def main():
         key = f"gw{event_id}:{tr['out']}->{tr['in']}"
         if key in state["processed"]:
             continue
-        p_out = match_player(idx, tr["out"], bootstrap)
-        p_in = match_player(idx, tr["in"], bootstrap)
-        if not p_out or not p_in:
-            skipped.append((tr, "could not identify player(s) in FPL data"))
+        # OUT player must be someone I own -> restrict candidates to my squad
+        p_out = match_player(idx, tr["out"], bootstrap, restrict_ids=squad_ids)
+        if p_out == "ambiguous":
+            skipped.append((tr, f"two players in my squad match the name '{tr['out']}'"))
+            continue
+        if not p_out:
+            # maybe I don't own them at all - resolve without restriction for the report
+            p_out_any = match_player(idx, tr["out"], bootstrap)
+            if p_out_any and p_out_any != "ambiguous":
+                skipped.append((tr, f"I don't own {p_out_any['web_name']}"))
+            else:
+                skipped.append((tr, f"could not identify '{tr['out']}' in FPL data"))
+            continue
+        # IN player must play the same position as the OUT player (FPL rule)
+        p_in = match_player(idx, tr["in"], bootstrap, etype=p_out["element_type"])
+        if p_in == "ambiguous":
+            skipped.append((tr, f"multiple FPL players match the name '{tr['in']}' - "
+                                "not guessing"))
+            continue
+        if not p_in:
+            skipped.append((tr, f"could not identify '{tr['in']}' in FPL data"))
             continue
         if p_in["id"] in squad_ids or p_in["id"] in already_in:
             log(f"Already mirrored/own {p_in['web_name']}; marking done.")

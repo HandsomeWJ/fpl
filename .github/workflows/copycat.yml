@@ -13,6 +13,7 @@ on:
 permissions:
   contents: write
   issues: write
+  actions: write
 
 concurrency:
   group: copycat
@@ -33,6 +34,7 @@ jobs:
       - name: Run copycat
         env:
           FIX_COOKIE: ${{ secrets.FIX_COOKIE }}
+          FPL_REFRESH_TOKEN: ${{ secrets.FPL_REFRESH_TOKEN }}
           FPL_COOKIE: ${{ secrets.FPL_COOKIE }}
           FPL_ENTRY: ${{ secrets.FPL_ENTRY }}
           TARGET_MANAGER: "Tom Dollimore"
