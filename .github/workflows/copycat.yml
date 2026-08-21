@@ -1,0 +1,51 @@
+name: FPL Copycat
+
+on:
+  schedule:
+    # Every 15 minutes (GitHub may delay these a few minutes)
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (1 = don't submit anything)"
+        default: "0"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: copycat
+  cancel-in-progress: false
+
+jobs:
+  copycat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests beautifulsoup4
+
+      - name: Run copycat
+        env:
+          FIX_COOKIE: ${{ secrets.FIX_COOKIE }}
+          FPL_COOKIE: ${{ secrets.FPL_COOKIE }}
+          FPL_ENTRY: ${{ secrets.FPL_ENTRY }}
+          TARGET_MANAGER: "Tom Dollimore"
+          DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python copycat.py
+
+      - name: Persist state
+        if: always()
+        run: |
+          git config user.name "fpl-copycat-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/state.json || true
+          git diff --cached --quiet || git commit -m "update state [skip ci]"
+          git pull --rebase origin ${GITHUB_REF_NAME} || true
+          git push || true
