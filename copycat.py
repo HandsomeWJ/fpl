@@ -523,14 +523,47 @@ def main():
     finish(state, dry, changed or bool(new_skips))
 
 
+def find_open_issue(repo, token, title):
+    """Return the first open issue with exactly this title, or None.
+
+    Paginates the open-issue list (not the fuzzy search API) so a recurring
+    failure like an auth outage matches its existing issue exactly.
+    """
+    headers = {"Authorization": f"Bearer {token}",
+               "Accept": "application/vnd.github+json"}
+    for page in range(1, 4):  # up to 300 open issues
+        r = requests.get(f"https://api.github.com/repos/{repo}/issues",
+                         headers=headers,
+                         params={"state": "open", "per_page": 100, "page": page},
+                         timeout=30)
+        if r.status_code != 200:
+            return None
+        items = r.json()
+        for it in items:
+            if "pull_request" not in it and it.get("title") == title:
+                return it
+        if len(items) < 100:
+            return None
+    return None
+
+
 def notify(title, body=""):
-    """Open a GitHub issue in this repo so the owner gets an email/notification."""
+    """Open a GitHub issue in this repo so the owner gets an email/notification.
+
+    Deduped: if an open issue with the identical title already exists (e.g. the
+    same failure every 15-min cron run), do nothing instead of piling up copies.
+    """
     repo = os.environ.get("GITHUB_REPOSITORY")
     token = os.environ.get("GITHUB_TOKEN")
     if not repo or not token:
         log(f"[notify] {title}\n{body}")
         return
     try:
+        existing = find_open_issue(repo, token, title)
+        if existing:
+            log(f"[notify] open issue #{existing.get('number')} already has this "
+                f"title; not opening a duplicate.")
+            return
         requests.post(f"https://api.github.com/repos/{repo}/issues",
                       headers={"Authorization": f"Bearer {token}",
                                "Accept": "application/vnd.github+json"},
