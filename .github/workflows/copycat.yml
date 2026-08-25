@@ -35,6 +35,8 @@ jobs:
         env:
           FIX_COOKIE: ${{ secrets.FIX_COOKIE }}
           FPL_REFRESH_TOKEN: ${{ secrets.FPL_REFRESH_TOKEN }}
+          # PAT with Variables: read/write - GITHUB_TOKEN cannot write Actions variables
+          GH_PAT: ${{ secrets.GH_PAT }}
           FPL_COOKIE: ${{ secrets.FPL_COOKIE }}
           FPL_ENTRY: ${{ secrets.FPL_ENTRY }}
           TARGET_MANAGER: "Tom Dollimore"

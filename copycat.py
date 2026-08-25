@@ -43,6 +43,10 @@ from bs4 import BeautifulSoup
 
 FIX_URL = "https://www.fantasyfootballfix.com/reveal/"
 FPL = "https://fantasy.premierleague.com"
+# Set when a rotated refresh token could not be persisted; the run still does its
+# work but exits non-zero so the failure shows red in Actions as well as in an issue.
+PERSIST_FAILED = False
+
 PL_TOKEN_URL = "https://account.premierleague.com/as/token"
 PL_CLIENT_ID = "bfcbaf69-aade-4c1b-8f00-c1cb8a193030"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -140,8 +144,15 @@ def fetch_fix_manager(name):
 
 
 # ---------------------------------------------------------------- fpl auth
-def _gh_headers():
-    return {"Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN', '')}",
+def _gh_headers(admin=False):
+    """Headers for the GitHub API.
+
+    admin=True is for the Actions *variables* API, which the workflow GITHUB_TOKEN
+    cannot write no matter what `permissions:` grants ("Resource not accessible by
+    integration"). That needs a PAT with Variables: read/write, supplied as GH_PAT.
+    """
+    token = (os.environ.get("GH_PAT") if admin else None) or os.environ.get("GITHUB_TOKEN", "")
+    return {"Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json"}
 
 
@@ -154,7 +165,7 @@ def load_saved_tokens():
     if not os.environ.get("GITHUB_REPOSITORY"):
         return None
     try:
-        r = requests.get(_gh_var_url("FPL_TOKENS"), headers=_gh_headers(), timeout=30)
+        r = requests.get(_gh_var_url("FPL_TOKENS"), headers=_gh_headers(admin=True), timeout=30)
         if r.status_code == 200:
             return json.loads(r.json()["value"])
     except Exception as e:
@@ -163,17 +174,28 @@ def load_saved_tokens():
 
 
 def save_tokens(tokens):
+    """Persist the rotated tokens. Returns True on success.
+
+    FPL issues one-time-use refresh tokens: each refresh invalidates the previous
+    one. If this write fails the automation is already doomed - the next run will
+    present a dead token - so the caller escalates instead of only logging.
+    """
     if not os.environ.get("GITHUB_REPOSITORY"):
-        return
+        return True
     try:
         body = {"name": "FPL_TOKENS", "value": json.dumps(tokens)}
-        r = requests.patch(_gh_var_url("FPL_TOKENS"), headers=_gh_headers(), json=body, timeout=30)
+        r = requests.patch(_gh_var_url("FPL_TOKENS"), headers=_gh_headers(admin=True),
+                           json=body, timeout=30)
         if r.status_code == 404:
-            r = requests.post(_gh_var_url(), headers=_gh_headers(), json=body, timeout=30)
+            r = requests.post(_gh_var_url(), headers=_gh_headers(admin=True),
+                              json=body, timeout=30)
         if r.status_code >= 400:
             log(f"[tokens] could not persist tokens: {r.status_code} {r.text[:200]}")
+            return False
+        return True
     except Exception as e:
         log(f"[tokens] could not persist tokens: {e}")
+        return False
 
 
 def refresh_access_token(refresh_token):
@@ -206,7 +228,20 @@ def get_fpl_access_token():
             new = {"access_token": j["access_token"],
                    "refresh_token": j.get("refresh_token", rt),
                    "expires_at": now + int(j.get("expires_in", 3600))}
-            save_tokens(new)
+            rotated = new["refresh_token"] != rt
+            if not save_tokens(new) and rotated:
+                # The old token is spent and the new one is now only in this process.
+                # Finish this run (it still holds a valid access token and may have a
+                # deadline to hit), but make the breakage impossible to miss.
+                global PERSIST_FAILED
+                PERSIST_FAILED = True
+                notify("FPL Copycat: token rotation could not be saved",
+                       "The FPL refresh token rotated but writing the FPL_TOKENS Actions "
+                       "variable failed, so the new token is lost when this run ends and "
+                       "the next run will fail with invalid_grant.\n\n"
+                       "Check that the GH_PAT secret exists, has not expired, and grants "
+                       "Variables: read and write on this repo. Then re-seed "
+                       "FPL_REFRESH_TOKEN from the FPL site.")
             log("[tokens] refreshed FPL access token.")
             return new["access_token"]
         log(f"[tokens] refresh attempt failed: {r.status_code} {r.text[:200]}")
@@ -586,3 +621,5 @@ if __name__ == "__main__":
         log(f"FATAL: {e}")
         notify(f"FPL Copycat: run failed - {e}")
         raise
+    if PERSIST_FAILED:
+        raise SystemExit("token rotation could not be saved - see the opened issue")
