@@ -90,6 +90,26 @@ in a *secret* would be masked, but needs libsodium/PyNaCl to write.
 
 - GW2 deadline is 2026-08-28T17:30Z. Tom has no pending transfers and his BB was GW1
   (spent), so nothing has been missed.
+
+### Schedule (changed 2026-08-25)
+The cron fires **hourly**, but `should_run_now()` in `copycat.py` makes almost every
+run a no-op. Real work happens only:
+- at **21:00 and 22:00 UTC** - ahead of the price change, and
+- in the **6h before the open gameweek's deadline** (`DEADLINE_WINDOW_H`).
+
+So ~2 runs on a quiet day, ~8 on a deadline day. `workflow_dispatch` always bypasses
+the gate.
+
+**FPL price changes moved to MIDNIGHT UK time for 2026/27** - the old 01:30 GMT /
+02:30 BST rule is gone. That is 23:00 UTC under BST and 00:00 UTC under GMT, so the
+21:00/22:00 UTC slots sit before the change year-round without needing DST logic.
+Two slots rather than one because GitHub routinely delays scheduled runs and
+sometimes drops them entirely.
+
+The gate reads the deadline from the **unauthenticated** bootstrap endpoint, so a
+skipped run spends no refresh-token rotation. It **fails open**: if the deadline
+can't be read the run proceeds, because a wasted run is much cheaper than a missed
+deadline. Do not make it fail closed.
 - Test account 7953181 HAS a saved 15-player squad (verified 2026-08-25 via public
   API: 15 picks in GW1, 67 pts). Tom's GW1 BB was never mirrored because auth was
   already broken — expected, no action needed.
