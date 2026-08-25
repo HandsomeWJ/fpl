@@ -4,8 +4,8 @@
 Automation that mirrors the FPL transfers and chip activations of elite manager
 **"Tom Dollimore"** (as revealed on https://www.fantasyfootballfix.com/reveal/, Elite XI
 Team Reveal) onto the owner's own FPL team. Runs on GitHub Actions
-(repo `HandsomeWJ/fpl`, workflow `.github/workflows/copycat.yml`, cron every 15 min)
-so it works while the owner's machine is off.
+(repo `HandsomeWJ/fpl`, workflow `.github/workflows/copycat.yml`) so it works while the
+owner's machine is off. The cron fires hourly but is gated — see [Schedule](#schedule-changed-2026-08-25).
 
 ## Hard requirements (agreed with the owner)
 1. **If Tom activates a chip, activate it on our team BEFORE any transfers.**
@@ -31,7 +31,8 @@ so it works while the owner's machine is off.
   `https://account.premierleague.com/as/token`, refresh_token grant.
   API auth = `Authorization: Bearer <access_token>` (no cookies needed; verified).
   The script refreshes tokens itself and persists rotation in the repo Actions
-  variable `FPL_TOKENS` (workflow has `actions: write`).
+  variable `FPL_TOKENS` — which needs the `GH_PAT` secret, NOT `GITHUB_TOKEN`; see
+  [Token rotation](#token-rotation--the-thing-that-broke-and-why-read-before-touching-auth).
 - Repo secrets: `FIX_COOKIE` (full Cookie header for fantasyfootballfix.com, contains
   Django `sessionid`), `FPL_REFRESH_TOKEN` (seed, from localStorage key
   `oidc.user:https://account.premierleague.com/as:<client_id>` on
@@ -110,9 +111,11 @@ The gate reads the deadline from the **unauthenticated** bootstrap endpoint, so 
 skipped run spends no refresh-token rotation. It **fails open**: if the deadline
 can't be read the run proceeds, because a wasted run is much cheaper than a missed
 deadline. Do not make it fail closed.
-- Test account 7953181 HAS a saved 15-player squad (verified 2026-08-25 via public
-  API: 15 picks in GW1, 67 pts). Tom's GW1 BB was never mirrored because auth was
-  already broken — expected, no action needed.
+
+### Test account
+7953181 HAS a saved 15-player squad (verified 2026-08-25 via public API: 15 picks in
+GW1, 67 pts). Tom's GW1 BB was never mirrored because auth was already broken —
+expected, no action needed.
 
 ## Conventions
 - Never log or commit token/cookie values; secrets stay in GitHub Actions secrets.
