@@ -161,6 +161,58 @@ def _gh_var_url(name=""):
     return f"https://api.github.com/repos/{repo}/actions/variables" + (f"/{name}" if name else "")
 
 
+PRICE_RUN_HOURS = {21, 22}   # UTC slots ahead of the midnight-UK price change
+DEADLINE_WINDOW_H = 6        # always run this many hours before a GW deadline
+
+
+def public_next_deadline():
+    """Deadline of the open GW, read from the UNAUTHENTICATED bootstrap endpoint.
+
+    Deliberately auth-free: the gate must be able to decide whether to skip without
+    spending a refresh-token rotation on a run that will do nothing.
+    """
+    r = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/",
+                     headers={"User-Agent": UA}, timeout=30)
+    r.raise_for_status()
+    events = r.json()["events"]
+    e = next((x for x in events if x["is_next"]), None) or \
+        next((x for x in events if x["is_current"]), None)
+    if not e:
+        return None
+    return datetime.fromisoformat(e["deadline_time"].replace("Z", "+00:00"))
+
+
+def should_run_now():
+    """Gate for the hourly cron.
+
+    The schedule fires hourly so deadline-day moves are caught, but real work only
+    happens when it matters: the daily pre-price-change slots, or inside the window
+    before the open gameweek's deadline. Fails OPEN - if the deadline can't be read
+    the run proceeds, because missing a deadline is far worse than a wasted run.
+    """
+    if os.environ.get("GITHUB_EVENT_NAME", "") != "schedule":
+        return True                      # manual dispatch always runs
+    now = datetime.now(timezone.utc)
+    if now.hour in PRICE_RUN_HOURS:
+        log(f"[gate] {now.hour:02d}:00 UTC price-change slot; running.")
+        return True
+    try:
+        dl = public_next_deadline()
+    except Exception as e:
+        log(f"[gate] could not read the deadline ({e}); running anyway.")
+        return True
+    if dl is None:
+        log("[gate] no open gameweek; skipping.")
+        return False
+    hours = (dl - now).total_seconds() / 3600.0
+    if 0 < hours <= DEADLINE_WINDOW_H:
+        log(f"[gate] {hours:.1f}h to the GW deadline; running.")
+        return True
+    log(f"[gate] {hours:.1f}h to the GW deadline, outside the {DEADLINE_WINDOW_H}h "
+        f"window and not a price slot; skipping.")
+    return False
+
+
 def check_pat():
     """Probe whether GH_PAT can write Actions variables, without spending an FPL token.
 
@@ -641,6 +693,8 @@ def finish(state, dry, changed):
 if __name__ == "__main__":
     if os.environ.get("CHECK_PAT") == "1":
         raise SystemExit(0 if check_pat() else 1)
+    if not should_run_now():
+        raise SystemExit(0)
     try:
         main()
     except Exception as e:
