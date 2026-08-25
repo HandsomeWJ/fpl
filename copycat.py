@@ -161,6 +161,30 @@ def _gh_var_url(name=""):
     return f"https://api.github.com/repos/{repo}/actions/variables" + (f"/{name}" if name else "")
 
 
+def check_pat():
+    """Probe whether GH_PAT can write Actions variables, without spending an FPL token.
+
+    Writes and deletes a throwaway variable. Run via the workflow's check_pat input
+    after issuing or renewing the PAT; a green result means token rotation will stick.
+    """
+    if not os.environ.get("GH_PAT"):
+        log("[check-pat] FAIL: GH_PAT is not set in the environment.")
+        return False
+    probe = "FPL_PAT_PROBE"
+    body = {"name": probe, "value": "ok"}
+    r = requests.post(_gh_var_url(), headers=_gh_headers(admin=True), json=body, timeout=30)
+    if r.status_code == 409:  # already there from an earlier probe
+        r = requests.patch(_gh_var_url(probe), headers=_gh_headers(admin=True),
+                           json=body, timeout=30)
+    if r.status_code >= 400:
+        log(f"[check-pat] FAIL: write returned {r.status_code} {r.text[:200]}")
+        log("[check-pat] GH_PAT needs 'Variables: read and write' on this repo.")
+        return False
+    d = requests.delete(_gh_var_url(probe), headers=_gh_headers(admin=True), timeout=30)
+    log(f"[check-pat] OK: GH_PAT can write Actions variables (cleanup {d.status_code}).")
+    return True
+
+
 def load_saved_tokens():
     if not os.environ.get("GITHUB_REPOSITORY"):
         return None
@@ -615,6 +639,8 @@ def finish(state, dry, changed):
 
 
 if __name__ == "__main__":
+    if os.environ.get("CHECK_PAT") == "1":
+        raise SystemExit(0 if check_pat() else 1)
     try:
         main()
     except Exception as e:
