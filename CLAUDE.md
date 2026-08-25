@@ -93,19 +93,30 @@ in a *secret* would be masked, but needs libsodium/PyNaCl to write.
   (spent), so nothing has been missed.
 
 ### Schedule (changed 2026-08-25)
-The cron fires **hourly**, but `should_run_now()` in `copycat.py` makes almost every
-run a no-op. Real work happens only:
-- at **21:00 and 22:00 UTC** - ahead of the price change, and
+The cron fires **hourly, plus :45 past 22 and 23 UTC**, but `should_run_now()` in
+`copycat.py` makes almost every run a no-op. Real work happens only:
+- in the **150 min before the price change** (`PRICE_LEAD_MIN`), and
 - in the **6h before the open gameweek's deadline** (`DEADLINE_WINDOW_H`).
 
-So ~2 runs on a quiet day, ~8 on a deadline day. `workflow_dispatch` always bypasses
-the gate.
+`workflow_dispatch` always bypasses the gate.
+
+**In the owner's clock (SGT), which is how they think about this:**
+
+| | Summer (BST) | Winter (GMT) |
+|---|---|---|
+| Price change | 07:00 SGT | 08:00 SGT |
+| Runs before it | 05:00, 06:00, 06:45 | 06:00, 06:45, 07:00, 07:45 |
+
+So 3-4 runs on a quiet day, plus ~6 on a deadline day.
 
 **FPL price changes moved to MIDNIGHT UK time for 2026/27** - the old 01:30 GMT /
-02:30 BST rule is gone. That is 23:00 UTC under BST and 00:00 UTC under GMT, so the
-21:00/22:00 UTC slots sit before the change year-round without needing DST logic.
-Two slots rather than one because GitHub routinely delays scheduled runs and
-sometimes drops them entirely.
+02:30 BST rule is gone. `minutes_to_price_change()` computes it from
+`Europe/London`, so the SGT times shift by themselves at the DST switch instead of
+drifting an hour twice a year. It falls back to fixed 21:00/22:00 UTC slots if
+tzdata is missing on the runner. Several slots rather than one because GitHub
+routinely delays scheduled runs and sometimes drops them entirely; the last slot is
+~15 min before the change, which closes the gap where a transfer by Tom could
+otherwise be mirrored after prices moved.
 
 The gate reads the deadline from the **unauthenticated** bootstrap endpoint, so a
 skipped run spends no refresh-token rotation. It **fails open**: if the deadline

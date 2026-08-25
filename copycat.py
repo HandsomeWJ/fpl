@@ -36,7 +36,7 @@ import re
 import sys
 import time
 import unicodedata
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 from bs4 import BeautifulSoup
@@ -161,8 +161,31 @@ def _gh_var_url(name=""):
     return f"https://api.github.com/repos/{repo}/actions/variables" + (f"/{name}" if name else "")
 
 
-PRICE_RUN_HOURS = {21, 22}   # UTC slots ahead of the midnight-UK price change
+PRICE_LEAD_MIN = 150         # start running this many minutes before the price change
 DEADLINE_WINDOW_H = 6        # always run this many hours before a GW deadline
+
+try:
+    from zoneinfo import ZoneInfo
+    UK_TZ = ZoneInfo("Europe/London")
+except Exception:                                    # no tzdata on the runner
+    UK_TZ = None
+
+
+def minutes_to_price_change(now=None):
+    """Minutes until the next FPL price change.
+
+    For 2026/27 prices move at MIDNIGHT UK time, which is 23:00 UTC under BST and
+    00:00 UTC under GMT. Computing it in Europe/London keeps that correct across the
+    DST switch instead of hard-coding UTC hours that drift twice a year. Returns None
+    if the zone is unavailable, and the caller falls back to fixed hours.
+    """
+    now = now or datetime.now(timezone.utc)
+    if UK_TZ is None:
+        return None
+    uk = now.astimezone(UK_TZ)
+    nxt_date = uk.date() + timedelta(days=1)
+    nxt = datetime(nxt_date.year, nxt_date.month, nxt_date.day, 0, 0, tzinfo=UK_TZ)
+    return (nxt - uk).total_seconds() / 60.0
 
 
 def public_next_deadline():
@@ -193,8 +216,13 @@ def should_run_now():
     if os.environ.get("GITHUB_EVENT_NAME", "") != "schedule":
         return True                      # manual dispatch always runs
     now = datetime.now(timezone.utc)
-    if now.hour in PRICE_RUN_HOURS:
-        log(f"[gate] {now.hour:02d}:00 UTC price-change slot; running.")
+    mins = minutes_to_price_change(now)
+    if mins is None:
+        if now.hour in (21, 22):     # fallback if Europe/London is unavailable
+            log(f"[gate] {now.hour:02d}:00 UTC price slot (no tzdata); running.")
+            return True
+    elif 0 <= mins <= PRICE_LEAD_MIN:
+        log(f"[gate] {mins:.0f}min to the price change; running.")
         return True
     try:
         dl = public_next_deadline()
@@ -209,7 +237,9 @@ def should_run_now():
         log(f"[gate] {hours:.1f}h to the GW deadline; running.")
         return True
     log(f"[gate] {hours:.1f}h to the GW deadline, outside the {DEADLINE_WINDOW_H}h "
-        f"window and not a price slot; skipping.")
+        f"window; {mins:.0f}min to the price change, outside {PRICE_LEAD_MIN}min. Skipping."
+        if mins is not None else
+        f"[gate] {hours:.1f}h to the GW deadline and not a price slot; skipping.")
     return False
 
 

@@ -2,13 +2,17 @@ name: FPL Copycat
 
 on:
   schedule:
-    # Fires hourly, but copycat.py's should_run_now() gate makes almost every run a
-    # no-op. Real work happens only at 21:00/22:00 UTC - ahead of the FPL price
-    # change, which for 2026/27 moved to MIDNIGHT UK time (23:00 UTC under BST,
-    # 00:00 UTC under GMT; the old 01:30 GMT / 02:30 BST rule is gone) - and in the
-    # 6h before a gameweek deadline, so deadline-day moves aren't missed. Two price
-    # slots, not one, because GitHub routinely delays and sometimes drops schedules.
+    # Fires hourly (plus :45), but copycat.py's should_run_now() gate makes almost
+    # every run a no-op. Real work happens only in the 150min before the FPL price
+    # change and in the 6h before a gameweek deadline. Owner's clock is SGT:
+    #   summer  price change 07:00 SGT -> runs 05:00, 06:00, 06:45 SGT
+    #   winter  price change 08:00 SGT -> runs 06:00, 06:45, 07:00, 07:45 SGT
+    # For 2026/27 prices move at MIDNIGHT UK time (the old 01:30 GMT / 02:30 BST
+    # rule is gone); the gate computes that from Europe/London so it tracks DST.
+    # Several slots, not one, because GitHub delays and sometimes drops schedules.
     - cron: "0 * * * *"
+    # :45 slots put the LAST run ~15min before the change under BST and under GMT.
+    - cron: "45 22,23 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
