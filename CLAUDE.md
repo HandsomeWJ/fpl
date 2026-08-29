@@ -25,6 +25,9 @@ owner's machine is off. The cron fires every 15 min but is gated — see
 - `test_local.py` — mocked end-to-end test (`python3 test_local.py`, needs
   requests + beautifulsoup4). Keep it passing.
 - `state/state.json` — dedup state, committed back by the workflow after each run.
+  The persist step **retries and then fails red**; it must never swallow a push
+  failure, because losing this file makes a later run report an already-mirrored
+  transfer as "I don't own X".
 
 ## Auth (2026/27 FPL site — cookies pl_profile/datadome are gone)
 - FPL uses OIDC: authority `https://account.premierleague.com/as`, public client id

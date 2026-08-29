@@ -62,10 +62,29 @@ jobs:
 
       - name: Persist state
         if: always()
+        # Must NOT swallow failures. state/state.json is the transfer dedup record;
+        # losing it silently makes a later run report an already-mirrored transfer as
+        # "I don't own X". Nearly every push failure here is a race with a concurrent
+        # commit, so retry - but if it genuinely can't be saved, fail red rather than
+        # report a green run that saved nothing.
         run: |
+          set -euo pipefail
           git config user.name "fpl-copycat-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add state/state.json || true
-          git diff --cached --quiet || git commit -m "update state [skip ci]"
-          git pull --rebase origin ${GITHUB_REF_NAME} || true
-          git push || true
+          git add state/state.json
+          if git diff --cached --quiet; then
+            echo "state unchanged; nothing to persist"
+            exit 0
+          fi
+          git commit -m "update state [skip ci]"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase origin "$GITHUB_REF_NAME" && git push; then
+              echo "state persisted on attempt $i"
+              exit 0
+            fi
+            echo "persist attempt $i failed; retrying"
+            git rebase --abort 2>/dev/null || true
+            sleep $((i * 5))
+          done
+          echo "::error::state/state.json could not be pushed - transfer dedup state is lost"
+          exit 1
