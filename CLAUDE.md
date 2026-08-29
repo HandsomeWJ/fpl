@@ -5,7 +5,8 @@ Automation that mirrors the FPL transfers and chip activations of elite manager
 **"Tom Dollimore"** (as revealed on https://www.fantasyfootballfix.com/reveal/, Elite XI
 Team Reveal) onto the owner's own FPL team. Runs on GitHub Actions
 (repo `HandsomeWJ/fpl`, workflow `.github/workflows/copycat.yml`) so it works while the
-owner's machine is off. The cron fires hourly but is gated — see [Schedule](#schedule-changed-2026-08-25).
+owner's machine is off. The cron fires every 15 min but is gated — see
+[Schedule](#schedule-changed-2026-08-25).
 
 ## Hard requirements (agreed with the owner)
 1. **If Tom activates a chip, activate it on our team BEFORE any transfers.**
@@ -89,11 +90,11 @@ token was invalidated by forcing a rotation — set `expires_at` to 0 via
 dispatch a run, which spends and replaces the exposed token.) Storing rotation state
 in a *secret* would be masked, but needs libsodium/PyNaCl to write.
 
-- GW2 deadline is 2026-08-28T17:30Z. Tom has no pending transfers and his BB was GW1
-  (spent), so nothing has been missed.
+- GW2 (deadline 2026-08-28T17:30Z) passed with no Tom transfers to mirror, so nothing
+  was missed — but see the scheduling note below: the deadline window had zero runs.
 
 ### Schedule (changed 2026-08-25)
-The cron fires **hourly, plus :45 past 22 and 23 UTC**, but `should_run_now()` in
+The cron fires **every 15 min at :07/:22/:37/:52**, but `should_run_now()` in
 `copycat.py` makes almost every run a no-op. Real work happens only:
 - in the **150 min before the price change** (`PRICE_LEAD_MIN`), and
 - in the **6h before the open gameweek's deadline** (`DEADLINE_WINDOW_H`).
@@ -105,18 +106,23 @@ The cron fires **hourly, plus :45 past 22 and 23 UTC**, but `should_run_now()` i
 | | Summer (BST) | Winter (GMT) |
 |---|---|---|
 | Price change | 07:00 SGT | 08:00 SGT |
-| Runs before it | 05:00, 06:00, 06:45 | 06:00, 06:45, 07:00, 07:45 |
+| Work window | 04:37 - 06:52 SGT | 05:37 - 07:52 SGT |
 
-So 3-4 runs on a quiet day, plus ~6 on a deadline day.
+The last firing lands ~8 min before the change.
+
+**Never schedule this on the hour.** GitHub delays scheduled runs under load and
+:00 is peak congestion. Measured here: `0 * * * *` delivered **13%** of its firings
+and dropped **every** slot in the GW2 deadline window (2026-08-28) — the copycat did
+no work at all inside the 6h before that deadline, and only escaped missing a
+transfer because Tom happened to make none. `*/15` delivered ~54%. Fire often, at
+off-peak minutes, and let the gate keep it cheap — a skipped run is one
+unauthenticated GET and spends no token rotation.
 
 **FPL price changes moved to MIDNIGHT UK time for 2026/27** - the old 01:30 GMT /
 02:30 BST rule is gone. `minutes_to_price_change()` computes it from
 `Europe/London`, so the SGT times shift by themselves at the DST switch instead of
 drifting an hour twice a year. It falls back to fixed 21:00/22:00 UTC slots if
-tzdata is missing on the runner. Several slots rather than one because GitHub
-routinely delays scheduled runs and sometimes drops them entirely; the last slot is
-~15 min before the change, which closes the gap where a transfer by Tom could
-otherwise be mirrored after prices moved.
+tzdata is missing on the runner.
 
 The gate reads the deadline from the **unauthenticated** bootstrap endpoint, so a
 skipped run spends no refresh-token rotation. It **fails open**: if the deadline
