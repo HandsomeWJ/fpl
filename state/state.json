@@ -1,5 +1,9 @@
 {
  "processed": [],
  "chips_done": [],
- "notified": []
+ "notified": [
+  "gw3:Calvert-Lewin->Wissa:I don't own Calvert-Lewin",
+  "gw3:Maguire->Gvardiol:can't afford Gvardiol (need 5.6, have 5.0)",
+  "gw3:Mbeumo->Elanga:I don't own Mbeumo"
+ ]
 }
