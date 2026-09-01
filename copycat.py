@@ -63,6 +63,10 @@ TRANSFER_CHIPS = {"wildcard", "freehit"}  # activated as part of the transfer pa
 report_lines = []
 
 DEBUG = os.environ.get("DEBUG") == "1"
+# WC/FH are whole-squad chips. This tool mirrors individual transfers, so attaching
+# one to a partial mirror spends a chip worth a full rebuild on a handful of swaps.
+# Held back unless explicitly enabled.
+ALLOW_TRANSFER_CHIP = os.environ.get("ALLOW_TRANSFER_CHIP") == "1"
 
 
 def _desc(m):
@@ -652,6 +656,22 @@ def main():
         club_counts = cc
         squad_ids = (squad_ids - {p_out["id"]}) | {p_in["id"]}
         sell_price[p_in["id"]] = cost
+
+    # ---------- 2b) don't spend a whole-squad chip on a partial mirror
+    if active_chip_fpl in TRANSFER_CHIPS and not ALLOW_TRANSFER_CHIP:
+        held = active_chip_fpl
+        active_chip_fpl = None
+        log(f"HOLDING chip {held}: it would be attached to only {len(to_apply)} "
+            f"transfer(s). {held} is a whole-squad chip and this tool mirrors "
+            f"individual transfers, so spending it here wastes it. "
+            f"Set ALLOW_TRANSFER_CHIP=1 to override.")
+        notify(f"FPL Copycat GW{event_id}: {held} held back, not played",
+               f"The target manager has {held} active, and {len(to_apply)} of their "
+               f"transfer(s) map onto your squad.\n\n"
+               f"{held} gives a full-squad rebuild for one gameweek. Attaching it to a "
+               f"partial mirror spends it for almost nothing, so it was NOT played and "
+               f"the transfers fell back to the normal free-transfer budget.\n\n"
+               f"To play it anyway, re-run with ALLOW_TRANSFER_CHIP=1.")
 
     # free-transfer budget (no automatic hits) unless WC/FH active or unlimited window
     if not unlimited and active_chip_fpl not in TRANSFER_CHIPS:

@@ -27,6 +27,9 @@ on:
       debug:
         description: "Verbose diagnostics: live squad, name resolution, payload (1 = yes)"
         default: "0"
+      allow_transfer_chip:
+        description: "Permit spending WC/FH on a partial mirror (1 = yes). Normally 0."
+        default: "0"
 
 permissions:
   contents: write
@@ -61,6 +64,7 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
           CHECK_PAT: ${{ github.event.inputs.check_pat || '0' }}
           DEBUG: ${{ github.event.inputs.debug || '0' }}
+          ALLOW_TRANSFER_CHIP: ${{ github.event.inputs.allow_transfer_chip || '0' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python copycat.py
 
