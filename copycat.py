@@ -455,6 +455,29 @@ def match_player(idx, name, bootstrap, restrict_ids=None, etype=None):
     return "ambiguous"
 
 
+def verify_transfers_applied(s, entry, to_apply):
+    """True if every intended transfer is already reflected in the live squad.
+
+    FPL's two-phase submit is not a pure validate-then-commit: the confirmed=false
+    call can ALREADY apply the transfer, after which the confirmed=true call is a
+    duplicate and is rejected with "element in is already picked" / "element out is
+    not a current pick" - errors that describe the state the first call created.
+    Verified on 2026-08-29 (run 33..., issue #192): the transfer had gone through and
+    was still reported as FAILED. So a rejection is only a real failure if the squad
+    does NOT show the change. Fails safe: unverifiable means treat as failed.
+    """
+    try:
+        team = get_my_team(s, entry)
+    except Exception as e:
+        log(f"[verify] could not re-read my team ({e}); treating as NOT applied.")
+        return False
+    ids = {p["element"] for p in team["picks"]}
+    for _, p_out, p_in, _, _, _ in to_apply:
+        if p_in["id"] not in ids or p_out["id"] in ids:
+            return False
+    return True
+
+
 # ---------------------------------------------------------------- main logic
 def main():
     entry = int(os.environ["FPL_ENTRY"])
@@ -671,10 +694,17 @@ def main():
                 payload["confirmed"] = True
                 r = s.post(f"{FPL}/api/transfers/", json=payload, headers=headers, timeout=60)
             if r.status_code >= 400 or "non_form_errors" in r.text[:500]:
-                log(f"ERROR submitting transfers: {r.status_code} {r.text[:500]}")
-                notify(f"FPL Copycat: transfer submission FAILED (GW{event_id})")
-                finish(state, dry, changed)
-                sys.exit(1)
+                # Do NOT trust the rejection on its own - the confirm phase is often a
+                # duplicate of a transfer the validation phase already applied. Ask the
+                # squad what actually happened before crying failure.
+                if verify_transfers_applied(s, entry, to_apply):
+                    log(f"Confirm phase rejected ({r.status_code}) but the squad already "
+                        f"shows these transfers; treating as applied, not failed.")
+                else:
+                    log(f"ERROR submitting transfers: {r.status_code} {r.text[:500]}")
+                    notify(f"FPL Copycat: transfer submission FAILED (GW{event_id})")
+                    finish(state, dry, changed)
+                    sys.exit(1)
         for _, _, _, _, _, key in to_apply:
             state["processed"].append(key)
         changed = True
