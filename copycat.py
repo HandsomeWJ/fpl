@@ -159,6 +159,54 @@ def fetch_fix_manager(name):
     return {"chips": chips, "transfers": transfers, "updated": updated, "gw": gw}
 
 
+def dump_reveal_structure(name, max_lines=250, max_depth=6):
+    """Print the tag/class tree of the target's reveal section.
+
+    Structure only - tags, classes, truncated text - because this repo is public and
+    its workflow logs are public with it. Enough to write a parser for the full XI
+    without republishing the page.
+    """
+    r = requests.get(FIX_URL, headers={"User-Agent": UA, "Cookie": os.environ["FIX_COOKIE"]},
+                     timeout=60)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "html.parser")
+    section = None
+    for sec in soup.select(".reveal-section"):
+        if name.lower() in sec.get_text(" ").lower():
+            section = sec
+            break
+    if section is None:
+        log(f"[dump] no .reveal-section matched '{name}'")
+        return False
+
+    classes = {}
+    for el in section.find_all(True):
+        for c in el.get("class", []):
+            classes[c] = classes.get(c, 0) + 1
+    log("[dump] classes in section: "
+        + ", ".join(f"{c}x{n}" for c, n in sorted(classes.items(), key=lambda kv: -kv[1])))
+
+    n = [0]
+
+    def walk(el, depth=0):
+        if depth > max_depth or n[0] >= max_lines:
+            return
+        for child in el.find_all(recursive=False):
+            if n[0] >= max_lines:
+                log("[dump] ... truncated")
+                return
+            cls = ".".join(child.get("class", []))
+            own = " ".join(t.strip() for t in child.find_all(string=True, recursive=False)
+                           if t.strip())[:70]
+            log(f"[dump] {'  ' * depth}<{child.name}{'.' + cls if cls else ''}>"
+                + (f"  {own!r}" if own else ""))
+            n[0] += 1
+            walk(child, depth + 1)
+
+    walk(section)
+    return True
+
+
 # ---------------------------------------------------------------- fpl auth
 def _gh_headers(admin=False):
     """Headers for the GitHub API.
@@ -808,6 +856,9 @@ def finish(state, dry, changed):
 if __name__ == "__main__":
     if os.environ.get("CHECK_PAT") == "1":
         raise SystemExit(0 if check_pat() else 1)
+    if os.environ.get("DUMP_REVEAL") == "1":
+        raise SystemExit(0 if dump_reveal_structure(
+            os.environ.get("TARGET_MANAGER", "Tom Dollimore")) else 1)
     if not should_run_now():
         raise SystemExit(0)
     try:
