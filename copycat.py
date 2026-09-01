@@ -152,11 +152,25 @@ def fetch_fix_manager(name):
         if out_name and in_name:
             transfers.append({"out": out_name, "in": in_name})
 
+    # Full 15, from the flip-card FRONT face only. The card also carries
+    # manager-vs-consensus and manager-vs-my-squad pitches on its back faces, so an
+    # unanchored .fffPitch selector silently reads the consensus XI instead.
+    squad = []
+    front = section.select_one(".flip-card-front")
+    if front:
+        for el in front.select(".fffPitchElement"):
+            t = el.select_one(".fffElementText")
+            if t:
+                nm = t.get_text(" ", strip=True)
+                if nm:
+                    squad.append(nm)
+
     updated = None
     m = re.search(r"Last Updated:\s*([^F]+?)(?:FPL|$)", section.get_text(" ", strip=True))
     if m:
         updated = m.group(1).strip()
-    return {"chips": chips, "transfers": transfers, "updated": updated, "gw": gw}
+    return {"chips": chips, "transfers": transfers, "updated": updated, "gw": gw,
+            "squad": squad}
 
 
 def dump_reveal_structure(name, max_lines=250, max_depth=6):
@@ -523,6 +537,36 @@ def match_player(idx, name, bootstrap, restrict_ids=None, etype=None):
     return "ambiguous"
 
 
+def squad_converges(fix_squad, projected_ids, idx, bootstrap, elements_by_id):
+    """Would the projected squad be exactly the target manager's 15?
+
+    This is the test for whether a whole-squad chip (WC/FH) is worth playing: spend it
+    only when it actually buys you their squad, never on a partial mirror. Returns
+    (converged, explanation). Fails CLOSED - anything unparseable or unresolvable
+    means "not converged", so an unreadable page holds the chip rather than gambling it.
+    """
+    if not fix_squad:
+        return False, "the reveal page gave no squad to compare against"
+    if len(fix_squad) != 15:
+        return False, f"parsed {len(fix_squad)} players from the reveal page, expected 15"
+    target, unresolved = set(), []
+    for nm in fix_squad:
+        m = match_player(idx, nm, bootstrap)
+        if m and m != "ambiguous":
+            target.add(m["id"])
+        else:
+            unresolved.append(nm)
+    if unresolved:
+        return False, f"could not resolve {unresolved} to FPL players"
+    if len(target) != 15:
+        return False, f"resolved to {len(target)} distinct players, expected 15"
+    if target == projected_ids:
+        return True, "projected squad matches the target manager exactly"
+    missing = [elements_by_id[i]["web_name"] for i in sorted(target - projected_ids)]
+    extra = [elements_by_id[i]["web_name"] for i in sorted(projected_ids - target)]
+    return False, f"would still differ - missing {missing}, holding {extra}"
+
+
 def verify_transfers_applied(s, entry, to_apply):
     """True if every intended transfer is already reflected in the live squad.
 
@@ -738,21 +782,28 @@ def main():
             break
         pending = deferred
 
-    # ---------- 2b) don't spend a whole-squad chip on a partial mirror
-    if active_chip_fpl in TRANSFER_CHIPS and not ALLOW_TRANSFER_CHIP:
+    # ---------- 2b) play a whole-squad chip only if it actually buys the squad
+    # squad_ids has been updated as transfers were accepted, so it is already the
+    # projected post-transfer squad.
+    if active_chip_fpl in TRANSFER_CHIPS:
         held = active_chip_fpl
-        active_chip_fpl = None
-        log(f"HOLDING chip {held}: it would be attached to only {len(to_apply)} "
-            f"transfer(s). {held} is a whole-squad chip and this tool mirrors "
-            f"individual transfers, so spending it here wastes it. "
-            f"Set ALLOW_TRANSFER_CHIP=1 to override.")
-        notify(f"FPL Copycat GW{event_id}: {held} held back, not played",
-               f"The target manager has {held} active, and {len(to_apply)} of their "
-               f"transfer(s) map onto your squad.\n\n"
-               f"{held} gives a full-squad rebuild for one gameweek. Attaching it to a "
-               f"partial mirror spends it for almost nothing, so it was NOT played and "
-               f"the transfers fell back to the normal free-transfer budget.\n\n"
-               f"To play it anyway, re-run with ALLOW_TRANSFER_CHIP=1.")
+        converged, why = squad_converges(fix.get("squad"), squad_ids, idx, bootstrap,
+                                         elements_by_id)
+        if converged:
+            log(f"Playing chip {held}: {why}.")
+        elif ALLOW_TRANSFER_CHIP:
+            log(f"Playing chip {held} by ALLOW_TRANSFER_CHIP override, despite: {why}.")
+        else:
+            active_chip_fpl = None
+            log(f"HOLDING chip {held}: {why}. A whole-squad chip is only worth playing "
+                f"when the mirror lands on the target manager's exact squad. "
+                f"Set ALLOW_TRANSFER_CHIP=1 to override.")
+            notify(f"FPL Copycat GW{event_id}: {held} held back, not played",
+                   f"The target manager has {held} active, but playing it would not "
+                   f"reproduce their squad: {why}.\n\n"
+                   f"{held} gives a full-squad rebuild for one gameweek, so it was NOT "
+                   f"played and the transfers fell back to the normal free-transfer "
+                   f"budget.\n\nTo play it anyway, re-run with ALLOW_TRANSFER_CHIP=1.")
 
     # free-transfer budget (no automatic hits) unless WC/FH active or unlimited window
     if not unlimited and active_chip_fpl not in TRANSFER_CHIPS:
