@@ -657,69 +657,86 @@ def main():
 
     to_apply, skipped = [], []
     bank_left = bank
-    for tr in fix["transfers"]:
-        key = f"gw{event_id}:{tr['out']}->{tr['in']}"
-        if key in state["processed"]:
-            continue
-        # OUT player must be someone I own -> restrict candidates to my squad
-        p_out = match_player(idx, tr["out"], bootstrap, restrict_ids=squad_ids)
-        if DEBUG:
-            log(f"[debug] OUT '{tr['out']}' restricted -> {_desc(p_out)}")
-            log(f"[debug] OUT '{tr['out']}' unrestricted -> "
-                f"{_desc(match_player(idx, tr['out'], bootstrap))}")
-        if p_out == "ambiguous":
-            skipped.append((tr, f"two players in my squad match the name '{tr['out']}'"))
-            continue
-        if not p_out:
-            # maybe I don't own them at all - resolve without restriction for the report
-            p_out_any = match_player(idx, tr["out"], bootstrap)
-            if p_out_any and p_out_any != "ambiguous":
-                skipped.append((tr, f"I don't own {p_out_any['web_name']}"))
-            else:
-                skipped.append((tr, f"could not identify '{tr['out']}' in FPL data"))
-            continue
-        # IN player must play the same position as the OUT player (FPL rule)
-        p_in = match_player(idx, tr["in"], bootstrap, etype=p_out["element_type"])
-        if DEBUG:
-            log(f"[debug] IN  '{tr['in']}' etype={p_out['element_type']} -> {_desc(p_in)}")
-        if p_in == "ambiguous":
-            skipped.append((tr, f"multiple FPL players match the name '{tr['in']}' - "
-                                "not guessing"))
-            continue
-        if not p_in:
-            skipped.append((tr, f"could not identify '{tr['in']}' in FPL data"))
-            continue
-        if p_in["id"] in squad_ids or p_in["id"] in already_in:
-            log(f"Already mirrored/own {p_in['web_name']}; marking done.")
-            state["processed"].append(key)
-            continue
-        if p_out["id"] not in squad_ids:
-            skipped.append((tr, f"I don't own {p_out['web_name']}"))
-            continue
-        if p_in["status"] == "u":  # unavailable/removed
-            skipped.append((tr, f"{p_in['web_name']} unavailable in FPL"))
-            continue
-        cost = p_in["now_cost"]
-        sell = sell_price.get(p_out["id"], p_out["now_cost"])
-        if bank_left + sell < cost:
-            skipped.append((tr, f"can't afford {p_in['web_name']} "
-                                f"(need {cost/10}, have {(bank_left+sell)/10})"))
-            continue
-        cc = dict(club_counts)
-        cc[p_out["team"]] -= 1
-        cc[p_in["team"]] = cc.get(p_in["team"], 0) + 1
-        if cc[p_in["team"]] > 3:
-            skipped.append((tr, f"would exceed 3 players from the same club "
-                                f"({p_in['web_name']})"))
-            continue
-        if p_out["element_type"] != p_in["element_type"]:
-            skipped.append((tr, "position mismatch between out/in players"))
-            continue
-        to_apply.append((tr, p_out, p_in, sell, cost, key))
-        bank_left = bank_left + sell - cost
-        club_counts = cc
-        squad_ids = (squad_ids - {p_out["id"]}) | {p_in["id"]}
-        sell_price[p_in["id"]] = cost
+    # Affordability is order-dependent: each swap is funded by its own sale plus the
+    # bank, so a cash-releasing transfer later in the list can pay for tight ones
+    # earlier in it. Evaluating once, in Fix's order, discarded transfers that the
+    # squad could actually afford. Defer affordability failures and re-run until a
+    # pass applies nothing; whatever is still deferred then is genuinely unaffordable.
+    pending = list(fix["transfers"])
+    while pending:
+        deferred = []
+        applied_this_pass = False
+        for tr in pending:
+            key = f"gw{event_id}:{tr['out']}->{tr['in']}"
+            if key in state["processed"]:
+                continue
+            # OUT player must be someone I own -> restrict candidates to my squad
+            p_out = match_player(idx, tr["out"], bootstrap, restrict_ids=squad_ids)
+            if DEBUG:
+                log(f"[debug] OUT '{tr['out']}' restricted -> {_desc(p_out)}")
+                log(f"[debug] OUT '{tr['out']}' unrestricted -> "
+                    f"{_desc(match_player(idx, tr['out'], bootstrap))}")
+            if p_out == "ambiguous":
+                skipped.append((tr, f"two players in my squad match the name '{tr['out']}'"))
+                continue
+            if not p_out:
+                # maybe I don't own them at all - resolve without restriction for the report
+                p_out_any = match_player(idx, tr["out"], bootstrap)
+                if p_out_any and p_out_any != "ambiguous":
+                    skipped.append((tr, f"I don't own {p_out_any['web_name']}"))
+                else:
+                    skipped.append((tr, f"could not identify '{tr['out']}' in FPL data"))
+                continue
+            # IN player must play the same position as the OUT player (FPL rule)
+            p_in = match_player(idx, tr["in"], bootstrap, etype=p_out["element_type"])
+            if DEBUG:
+                log(f"[debug] IN  '{tr['in']}' etype={p_out['element_type']} -> {_desc(p_in)}")
+            if p_in == "ambiguous":
+                skipped.append((tr, f"multiple FPL players match the name '{tr['in']}' - "
+                                    "not guessing"))
+                continue
+            if not p_in:
+                skipped.append((tr, f"could not identify '{tr['in']}' in FPL data"))
+                continue
+            if p_in["id"] in squad_ids or p_in["id"] in already_in:
+                log(f"Already mirrored/own {p_in['web_name']}; marking done.")
+                state["processed"].append(key)
+                continue
+            if p_out["id"] not in squad_ids:
+                skipped.append((tr, f"I don't own {p_out['web_name']}"))
+                continue
+            if p_in["status"] == "u":  # unavailable/removed
+                skipped.append((tr, f"{p_in['web_name']} unavailable in FPL"))
+                continue
+            cost = p_in["now_cost"]
+            sell = sell_price.get(p_out["id"], p_out["now_cost"])
+            if bank_left + sell < cost:
+                deferred.append(tr)   # a later sale may fund this; retried next pass
+                continue
+            cc = dict(club_counts)
+            cc[p_out["team"]] -= 1
+            cc[p_in["team"]] = cc.get(p_in["team"], 0) + 1
+            if cc[p_in["team"]] > 3:
+                skipped.append((tr, f"would exceed 3 players from the same club "
+                                    f"({p_in['web_name']})"))
+                continue
+            if p_out["element_type"] != p_in["element_type"]:
+                skipped.append((tr, "position mismatch between out/in players"))
+                continue
+            to_apply.append((tr, p_out, p_in, sell, cost, key))
+            applied_this_pass = True
+            bank_left = bank_left + sell - cost
+            club_counts = cc
+            squad_ids = (squad_ids - {p_out["id"]}) | {p_in["id"]}
+            sell_price[p_in["id"]] = cost
+
+        if not applied_this_pass:
+            # No pass can free up more money, so the rest are truly unaffordable.
+            for tr in deferred:
+                skipped.append((tr, "can't afford it even after the other "
+                                    "transfers free up money"))
+            break
+        pending = deferred
 
     # ---------- 2b) don't spend a whole-squad chip on a partial mirror
     if active_chip_fpl in TRANSFER_CHIPS and not ALLOW_TRANSFER_CHIP:
