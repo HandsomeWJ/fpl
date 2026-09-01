@@ -62,6 +62,18 @@ TRANSFER_CHIPS = {"wildcard", "freehit"}  # activated as part of the transfer pa
 
 report_lines = []
 
+DEBUG = os.environ.get("DEBUG") == "1"
+
+
+def _desc(m):
+    """Render a match_player result for the debug log."""
+    if m is None:
+        return "NO MATCH"
+    if m == "ambiguous":
+        return "AMBIGUOUS"
+    return (f"{m['web_name']}#{m['id']} type={m['element_type']} "
+            f"team={m['team']} PS{m['now_cost']/10}")
+
 
 def log(msg):
     print(msg, flush=True)
@@ -485,6 +497,15 @@ def main():
     elements_by_id = {e["id"]: e for e in bootstrap["elements"]}
     idx = build_player_index(bootstrap)
 
+    if DEBUG:
+        log(f"[debug] event_id={event_id} fix_gw={fix['gw']} bank={bank} "
+            f"free_transfers={free_transfers} made={made} unlimited={unlimited}")
+        log("[debug] live squad: " + ", ".join(
+            f"{elements_by_id[p['element']]['web_name']}#{p['element']}"
+            f"(sell={p['selling_price']/10})" for p in picks))
+        log("[debug] my chips: " + str({k: v.get("status_for_entry")
+                                        for k, v in my_chips.items()}))
+
     changed = False
 
     # ---------- 1) chips first (VERY IMPORTANT: before any transfers)
@@ -540,6 +561,8 @@ def main():
     sell_price = {p["element"]: p["selling_price"] for p in picks}
     my_gw_transfers = get_my_gw_transfers(s, entry, event_id)
     already_in = {t["element_in"] for t in my_gw_transfers}
+    if DEBUG:
+        log(f"[debug] transfers already made this GW: {my_gw_transfers}")
 
     to_apply, skipped = [], []
     bank_left = bank
@@ -549,6 +572,10 @@ def main():
             continue
         # OUT player must be someone I own -> restrict candidates to my squad
         p_out = match_player(idx, tr["out"], bootstrap, restrict_ids=squad_ids)
+        if DEBUG:
+            log(f"[debug] OUT '{tr['out']}' restricted -> {_desc(p_out)}")
+            log(f"[debug] OUT '{tr['out']}' unrestricted -> "
+                f"{_desc(match_player(idx, tr['out'], bootstrap))}")
         if p_out == "ambiguous":
             skipped.append((tr, f"two players in my squad match the name '{tr['out']}'"))
             continue
@@ -562,6 +589,8 @@ def main():
             continue
         # IN player must play the same position as the OUT player (FPL rule)
         p_in = match_player(idx, tr["in"], bootstrap, etype=p_out["element_type"])
+        if DEBUG:
+            log(f"[debug] IN  '{tr['in']}' etype={p_out['element_type']} -> {_desc(p_in)}")
         if p_in == "ambiguous":
             skipped.append((tr, f"multiple FPL players match the name '{tr['in']}' - "
                                 "not guessing"))
@@ -629,6 +658,9 @@ def main():
                           for _, p_out, p_in, _, _, _ in to_apply)
         log(f"Submitting {len(to_apply)} transfer(s): {names}"
             + (f" with chip {active_chip_fpl}" if active_chip_fpl else ""))
+        if DEBUG:
+            log(f"[debug] payload transfers={payload['transfers']} "
+                f"chip={payload['chip']} freehit={payload['freehit']}")
         if not dry:
             headers = {"Referer": "https://fantasy.premierleague.com/transfers",
                        "Content-Type": "application/json"}
@@ -648,6 +680,9 @@ def main():
         changed = True
 
     # ---------- 4) report skips (once per skip)
+    for tr, reason in skipped:
+        # print, not log(): the issue body already lists these via new_skips
+        print(f"SKIP {tr['out']} -> {tr['in']}: {reason}", flush=True)
     new_skips = []
     for tr, reason in skipped:
         nkey = f"gw{event_id}:{tr['out']}->{tr['in']}:{reason}"

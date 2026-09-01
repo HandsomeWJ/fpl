@@ -24,6 +24,9 @@ on:
       check_pat:
         description: "Only probe whether GH_PAT can write Actions variables (1 = yes)"
         default: "0"
+      debug:
+        description: "Verbose diagnostics: live squad, name resolution, payload (1 = yes)"
+        default: "0"
 
 permissions:
   contents: write
@@ -57,6 +60,7 @@ jobs:
           TARGET_MANAGER: "Tom Dollimore"
           DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
           CHECK_PAT: ${{ github.event.inputs.check_pat || '0' }}
+          DEBUG: ${{ github.event.inputs.debug || '0' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python copycat.py
 
