@@ -204,6 +204,22 @@ def dump_reveal_structure(name, max_lines=250, max_depth=6):
             walk(child, depth + 1)
 
     walk(section)
+
+    # Try the anchored squad parse and show what it yields.
+    front = section.select_one(".flip-card-front")
+    log(f"[dump] flip-card-front found: {bool(front)}")
+    if front:
+        pitches = front.select(".fffPitch")
+        benches = front.select(".fffBench")
+        els = front.select(".fffPitchElement")
+        log(f"[dump] front: {len(pitches)} pitch, {len(benches)} bench, "
+            f"{len(els)} pitch elements")
+        for i, el in enumerate(els):
+            t = el.select_one(".fffElementText")
+            detail = el.select_one(".fffElementDetail")
+            log(f"[dump]   [{i:>2}] text={t.get_text(' ', strip=True)[:28]!r} "
+                f"detail={detail.get_text(' ', strip=True)[:28]!r}" if t and detail else
+                f"[dump]   [{i:>2}] RAW={el.get_text(' ', strip=True)[:50]!r}")
     return True
 
 
