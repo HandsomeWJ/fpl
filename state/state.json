@@ -1,5 +1,9 @@
 {
- "processed": [],
+ "processed": [
+  "gw3:Mbeumo->Elanga",
+  "gw3:Calvert-Lewin->Wissa",
+  "gw3:Maguire->Gvardiol"
+ ],
  "chips_done": [],
  "notified": [
   "gw3:Calvert-Lewin->Wissa:I don't own Calvert-Lewin",
