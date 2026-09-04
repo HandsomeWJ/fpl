@@ -229,12 +229,19 @@ def dump_reveal_structure(name, max_lines=250, max_depth=6):
         els = front.select(".fffPitchElement")
         log(f"[dump] front: {len(pitches)} pitch, {len(benches)} bench, "
             f"{len(els)} pitch elements")
+        pitch = pitches[0] if pitches else None
+        bench = benches[0] if benches else None
         for i, el in enumerate(els):
             t = el.select_one(".fffElementText")
-            detail = el.select_one(".fffElementDetail")
-            log(f"[dump]   [{i:>2}] text={t.get_text(' ', strip=True)[:28]!r} "
-                f"detail={detail.get_text(' ', strip=True)[:28]!r}" if t and detail else
-                f"[dump]   [{i:>2}] RAW={el.get_text(' ', strip=True)[:50]!r}")
+            nm = t.get_text(" ", strip=True)[:20] if t else "?"
+            where = "BENCH" if (bench and el in bench.find_all(True)) else \
+                    ("PITCH" if (pitch and el in pitch.find_all(True)) else "?")
+            # every class inside this element - captain/vice markers must be in here
+            inner = sorted({c for d in el.find_all(True) for c in d.get("class", [])})
+            title_attrs = [d.get("title") or d.get("aria-label") for d in el.find_all(True)
+                           if d.get("title") or d.get("aria-label")]
+            log(f"[dump]   [{i:>2}] {where} {nm:<20} classes={inner} "
+                f"titles={title_attrs}")
     return True
 
 
