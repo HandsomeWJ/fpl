@@ -156,22 +156,38 @@ def fetch_fix_manager(name):
     # Full 15, from the flip-card FRONT face only. The card also carries
     # manager-vs-consensus and manager-vs-my-squad pitches on its back faces, so an
     # unanchored .fffPitch selector silently reads the consensus XI instead.
-    squad = []
+    squad, starters, bench, captain, vice = [], [], [], None, None
     front = section.select_one(".flip-card-front")
     if front:
+        pitch_el = front.select_one(".fffPitch")
+        bench_el = front.select_one(".fffBench")
+        bench_nodes = set(id(d) for d in bench_el.find_all(True)) if bench_el else set()
         for el in front.select(".fffPitchElement"):
             t = el.select_one(".fffElementText")
-            if t:
-                nm = t.get_text(" ", strip=True)
-                if nm:
-                    squad.append(nm)
+            if not t:
+                continue
+            nm = t.get_text(" ", strip=True)
+            if not nm:
+                continue
+            squad.append(nm)
+            # DOM order is the lineup order: pitch rows GK->DEF->MID->FWD, then bench
+            # with the reserve keeper first, which is exactly FPL's position ordering.
+            (bench if id(el) in bench_nodes else starters).append(nm)
+            # Armbands are title attributes, not classes.
+            for d in el.find_all(True):
+                tag = (d.get("title") or d.get("aria-label") or "").strip().lower()
+                if tag == "captain":
+                    captain = nm
+                elif tag == "vice-captain":
+                    vice = nm
 
     updated = None
     m = re.search(r"Last Updated:\s*([^F]+?)(?:FPL|$)", section.get_text(" ", strip=True))
     if m:
         updated = m.group(1).strip()
     return {"chips": chips, "transfers": transfers, "updated": updated, "gw": gw,
-            "squad": squad}
+            "squad": squad, "starters": starters, "bench": bench,
+            "captain": captain, "vice": vice}
 
 
 def dump_reveal_structure(name, max_lines=250, max_depth=6):
@@ -645,6 +661,70 @@ def squad_converges(fix_squad, projected_ids, idx, bootstrap, elements_by_id):
     return False, f"would still differ - missing {missing}, holding {extra}"
 
 
+def sync_lineup(s_sess, entry, picks, fix, idx, bootstrap, elements_by_id, dry):
+    """Match the target manager's starting XI, bench order and armbands.
+
+    Only safe once the squad already matches theirs, so the caller gates on
+    convergence - otherwise the lineup would reference players we do not own.
+
+    FPL positions: 1-11 are the starting XI with the keeper at 1; 12-15 are the bench
+    with the reserve keeper at 12. The reveal page's DOM order is already exactly
+    that (pitch rows run GK->DEF->MID->FWD, then the bench), so document order maps
+    straight onto position numbers.
+
+    Returns (changed, note).
+    """
+    starters, bench = fix.get("starters") or [], fix.get("bench") or []
+    if len(starters) != 11 or len(bench) != 4:
+        return False, f"lineup unusable ({len(starters)} starters, {len(bench)} bench)"
+    if not fix.get("captain"):
+        return False, "no captain found on the reveal page"
+
+    order, seen = [], set()
+    for nm in starters + bench:
+        m = match_player(idx, nm, bootstrap)
+        if not m or m == "ambiguous":
+            return False, f"could not resolve '{nm}'"
+        if m["id"] in seen:
+            return False, f"'{nm}' resolved to a duplicate player"
+        seen.add(m["id"])
+        order.append(m["id"])
+
+    owned = {p["element"] for p in picks}
+    if seen != owned:
+        return False, "lineup names do not match the squad we own"
+
+    cap = match_player(idx, fix["captain"], bootstrap)
+    vc = match_player(idx, fix["vice"], bootstrap) if fix.get("vice") else None
+    cap_id = cap["id"] if cap and cap != "ambiguous" else None
+    vc_id = vc["id"] if vc and vc != "ambiguous" else None
+    if cap_id is None:
+        return False, f"could not resolve captain '{fix['captain']}'"
+    if cap_id not in order[:11]:
+        return False, "captain is not in the starting XI"
+
+    new_picks = [{"element": pid, "position": i + 1,
+                  "is_captain": pid == cap_id, "is_vice_captain": pid == vc_id}
+                 for i, pid in enumerate(order)]
+    current = {p["element"]: (p["position"], p["is_captain"], p["is_vice_captain"])
+               for p in picks}
+    wanted = {p["element"]: (p["position"], p["is_captain"], p["is_vice_captain"])
+              for p in new_picks}
+    if current == wanted:
+        return False, "lineup already matches"
+
+    cname = elements_by_id[cap_id]["web_name"]
+    vname = elements_by_id[vc_id]["web_name"] if vc_id else "none"
+    note = (f"XI/bench reordered, captain {cname}, vice {vname}")
+    if dry:
+        return False, f"[dry-run] would set {note}"
+    # picks only - deliberately no "chip" key, so an active chip is left untouched.
+    r = s_sess.post(f"{FPL}/api/my-team/{entry}/", json={"picks": new_picks}, timeout=60)
+    if r.status_code >= 400:
+        return False, f"FAILED {r.status_code} {r.text[:200]}"
+    return True, note
+
+
 def verify_transfers_applied(s, entry, to_apply):
     """True if every intended transfer is already reflected in the live squad.
 
@@ -951,6 +1031,21 @@ def main():
         for _, _, _, _, _, key in to_apply:
             state["processed"].append(key)
         changed = True
+
+    # ---------- 3b) match their XI, bench order and armbands
+    # Re-read the squad: transfers just changed it, and the lineup must be built from
+    # what we actually own now. Gated on convergence - reordering a squad that is not
+    # theirs would reference players we do not have.
+    if not skipped or to_apply:
+        try:
+            fresh = get_my_team(s, entry)["picks"]
+        except Exception as e:
+            fresh = picks
+            log(f"[lineup] could not re-read squad ({e}); using the pre-transfer picks")
+        lineup_changed, lineup_note = sync_lineup(s, entry, fresh, fix, idx, bootstrap,
+                                                  elements_by_id, dry)
+        log(f"[lineup] {lineup_note}")
+        changed = changed or lineup_changed
 
     # ---------- 4) report skips (once per skip)
     for tr, reason in skipped:
