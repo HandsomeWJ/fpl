@@ -960,7 +960,12 @@ def main():
                 (f"{len(to_apply)} transfer(s) applied" if to_apply else "action needed")
         body = "\n".join(report_lines + ([""] + ["Skipped (need your decision):"] + new_skips
                                          if new_skips else []))
-        notify(title, body)
+        if dry:
+            # A dry run submitted nothing, so an issue saying "applied" would be a lie.
+            # Diagnostics belong in the run log, not in the issue tracker.
+            log(f"[dry-run] would have opened an issue: {title!r} (not opening)")
+        else:
+            notify(title, body)
 
     finish(state, dry, changed or bool(new_skips))
 
