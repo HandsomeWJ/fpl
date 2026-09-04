@@ -9,8 +9,9 @@ Rules implemented:
   1. If the target manager has a chip ACTIVE and you haven't played it this GW, activate it FIRST
      (wildcard/freehit are attached to the transfer request itself, which is how FPL activates
      them before transfers; bboost/3xc are activated via the my-team endpoint immediately).
-  2. Mirror each of the manager's transfers (out X -> in Y) that maps cleanly onto your squad:
-     you own X, you don't own Y, you can afford Y, and the 3-per-club rule holds.
+  2. Mirror the manager's SQUAD by diffing it against ours - never by replaying their
+     transfer list, which is a chronological log and can contain reversals that FPL
+     rejects as a batch. See plan_net_transfers() and CLAUDE.md.
   3. Transfers that don't map cleanly are SKIPPED and reported (GitHub issue).
   4. Without an active WC/FH, only as many transfers as you have free transfers are applied;
      the rest are skipped and reported (no automatic -4 hits).
@@ -537,6 +538,29 @@ def match_player(idx, name, bootstrap, restrict_ids=None, etype=None):
     return "ambiguous"
 
 
+def net_out_transfer_log(transfers):
+    """Collapse a chronological transfer log into its NET effect.
+
+    Only used when the reveal squad cannot be parsed and we must fall back to the log.
+    The log is a sequence, but an FPL transfers batch is not: every entry is validated
+    against the CURRENT squad, so a log containing A->B and later B->A rejects the
+    whole payload. Cancelling round trips first means the fallback submits what the
+    manager actually ended up doing, not the path they took to get there.
+    """
+    outs, ins = [], []
+    for tr in transfers:
+        o, i = tr["out"], tr["in"]
+        if o in ins:
+            ins.remove(o)          # bought earlier in the log, now sold again
+        else:
+            outs.append(o)
+        if i in outs:
+            outs.remove(i)         # sold earlier in the log, now bought back
+        else:
+            ins.append(i)
+    return [{"out": o, "in": i} for o, i in zip(outs, ins)]
+
+
 def plan_net_transfers(fix_squad, squad_ids, idx, bootstrap, elements_by_id):
     """Net diff from my squad to the target manager's, as out/in name pairs.
 
@@ -758,8 +782,9 @@ def main():
     net_pairs, net_note = plan_net_transfers(fix.get("squad"), squad_ids, idx, bootstrap,
                                              elements_by_id)
     if net_pairs is None:
-        log(f"[plan] falling back to the transfer log: {net_note}")
-        pending = list(fix["transfers"])
+        pending = net_out_transfer_log(fix["transfers"])
+        log(f"[plan] falling back to the transfer log ({net_note}); "
+            f"netted {len(fix['transfers'])} log entries to {len(pending)} transfer(s)")
     else:
         log(f"[plan] {net_note}")
         if DEBUG:

@@ -50,17 +50,90 @@ owner's machine is off. The cron fires every 15 min but is gated — see
 ## Fix reveal parsing (server-rendered HTML, no API)
 Section = `.reveal-section` containing the manager's name. Chips: `.rchip` →
 `.rchip__chip` (WC1/WC2/TC/FH/BB) + `.rchip__status` (available/active/…).
-Transfers: `li.rtransfers__transfer` → two `.rtransfers__player`, each with
-`.rtransfers__status` (Out/In); the player name is the element text minus the status
-word. NOTE: transfer rows were only ever observed empty (GW1 had no transfers) — the
-name-extraction should be sanity-checked against the first real transfer that appears.
 
-## Status (2026-08-25) — WORKING, end-to-end verified
-Auth, token rotation and persistence all confirmed green. Runs 32851077765 /
-32851200296 / 32851411701 proved the full loop: refresh → rotate → persist to
-`FPL_TOKENS` → next run reads it. All 191 stale failure issues closed; 0 open.
-Still to do: let GW's first real Tom transfer land on the test account, then switch
-`FPL_REFRESH_TOKEN` + `FPL_ENTRY` to the main account.
+### The full 15 (this is the source of truth for mirroring)
+`.flip-card-front .fffPitchElement` → `.fffElementText` gives the manager's squad,
+15 names. **Anchor to `.flip-card-front`.** The card has three faces and five pitches
+in total: the front is the manager's real team; the two back faces hold
+manager-vs-consensus and manager-vs-my-squad comparisons. A bare `.fffPitch` selector
+silently reads the CONSENSUS XI instead — wrong team, no error.
+
+### The transfer list is a LOG, not a diff — do not replay it
+`li.rtransfers__transfer` → two `.rtransfers__player` with `.rtransfers__status`
+(Out/In). This is a **chronological log of everything the manager did this gameweek**,
+not their net change. Under a Free Hit (unlimited transfers) it fills up with
+reversals and repeats — real example, GW3 2026-09-04:
+
+```
+B.Fernandes -> Enzo      <- bought Enzo
+Enzo -> B.Fernandes      <- changed their mind
+B.Fernandes -> Cherki    <- B.Fernandes leaves AGAIN
+```
+
+**An FPL transfers batch is not a sequence.** Every entry is validated against the
+CURRENT squad, not applied in order, so a payload holding both `A->B` and `B->A`
+contradicts itself and the WHOLE batch is rejected:
+
+```
+400 {"transfers":[{},{"element_in":[{"code":"transfer_element_in_is_pick"}],
+                     "element_out":[{"code":"transfer_element_out_not_pick"}]},{},...]}
+```
+
+This broke mirroring silently from 2026-09-02 to 2026-09-04: every live run 400'd and
+applied nothing, while the runs still looked like ordinary reported failures.
+
+**Fix: mirror by NET DIFF, never by replaying the log** (`plan_net_transfers`). Diff
+the live squad against the parsed 15 and transfer straight to the destination,
+ignoring the route. Pairs are matched within position, which is always possible
+because both sides are valid FPL squads and so share positional shape. This is also
+naturally idempotent and self-correcting: a partial application just produces a
+smaller diff next run.
+
+If the squad can't be parsed or resolved, the fallback replays the log — but
+`net_out_transfer_log` cancels round trips first, so even the degraded path can't
+submit a self-contradicting batch.
+
+## Status (2026-09-04) — mirroring fully automatic and verified live
+GW3: 12 net transfers applied unattended, squad matches Tom exactly, Free Hit played
+automatically on convergence. Auth, token rotation and persistence green since
+2026-08-25. Only remaining step: switch `FPL_REFRESH_TOKEN` + `FPL_ENTRY` to the
+MAIN account (currently the test account, 7953181).
+
+### How automatic mirroring works (the whole point of the project)
+Every gated run, with no human in the loop:
+1. Parse Tom's **full 15** from the reveal page front face.
+2. **Diff** it against the live squad → net transfers (never replay the log).
+3. Apply what's affordable, retrying deferred ones as sales free up cash
+   (`bank_left` is order-dependent — see below).
+4. Play BB/TC immediately if Tom has them active; play **WC/FH only if the projected
+   squad equals Tom's exactly** (`squad_converges`).
+5. Submit, then verify against the live squad before believing any rejection.
+
+**It is idempotent.** The diff is recomputed from real squads every run, so a partial
+application simply yields a smaller diff next time, and a fully-mirrored squad yields
+`[plan] already matching` and does nothing. There is no state to corrupt.
+
+**What legitimately stops it**, all reported as issues rather than failing silently:
+- No free transfers left and no chip → skipped rather than taking an automatic -4.
+- Genuinely unaffordable after all sales are applied.
+- 3-per-club violation, unavailable player, ambiguous name.
+- Squad won't converge → WC/FH held back with the exact difference named.
+
+### Order-dependent affordability (fixed 2026-09-01)
+Each swap is funded by its own sale plus the bank, so a cash-releasing transfer later
+in the list can pay for tight ones earlier in it. Evaluating once, in list order,
+discarded transfers the squad could afford: selling Mbeumo (8.0) funds both Wissa
+(6.1) and Gvardiol (5.6), but those were checked first against 6.0 and 5.0 and
+dropped — 1 of 3 applied when all 3 fitted with 1.2 to spare. Affordability failures
+are now **deferred and retried until a pass applies nothing**.
+
+### Two-phase submit: `confirmed:false` COMMITS (fixed 2026-08-29)
+FPL's submit is not validate-then-commit. The `confirmed:false` call already applies
+the transfer, so the `confirmed:true` confirm is a duplicate and is rejected with
+`element in is already picked` / `element out is not a current pick` — errors that
+describe the state the FIRST call created. Three separate successful runs were
+reported as FAILED before this was understood. `verify_transfers_applied` now re-reads
+the squad before believing any rejection, and fails safe if it can't.
 
 ### Token rotation — the thing that broke, and why (read before touching auth)
 **FPL's OIDC issues one-time-use refresh tokens.** Each refresh returns a NEW
