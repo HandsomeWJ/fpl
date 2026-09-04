@@ -537,6 +537,53 @@ def match_player(idx, name, bootstrap, restrict_ids=None, etype=None):
     return "ambiguous"
 
 
+def plan_net_transfers(fix_squad, squad_ids, idx, bootstrap, elements_by_id):
+    """Net diff from my squad to the target manager's, as out/in name pairs.
+
+    The reveal page lists a CHRONOLOGICAL transfer log for the gameweek, not a net
+    change. Under a Free Hit especially it contains reversals (A->B then B->A) and the
+    same player leaving twice. Replaying that log produces a batch FPL rejects
+    outright, because it validates every entry against the CURRENT squad rather than
+    applying them in sequence - so A->B and B->A in one payload contradict each other.
+
+    Diffing squads sidesteps all of it: whatever the route, the destination is the
+    same. Pairs are matched within position, which is always possible because both
+    sides are valid FPL squads and therefore have identical positional shape.
+    Returns (pairs, note); empty pairs means nothing to do or nothing usable.
+    """
+    if not fix_squad or len(fix_squad) != 15:
+        return None, f"reveal squad unusable ({len(fix_squad or [])} players)"
+    target = set()
+    for nm in fix_squad:
+        m = match_player(idx, nm, bootstrap)
+        if not m or m == "ambiguous":
+            return None, f"could not resolve '{nm}' to an FPL player"
+        target.add(m["id"])
+    if len(target) != 15:
+        return None, f"reveal squad resolved to {len(target)} distinct players"
+
+    sell = sorted(squad_ids - target)
+    buy = sorted(target - squad_ids)
+    if not sell and not buy:
+        return [], "already matching"
+    by_pos_out, by_pos_in = {}, {}
+    for i in sell:
+        by_pos_out.setdefault(elements_by_id[i]["element_type"], []).append(i)
+    for i in buy:
+        by_pos_in.setdefault(elements_by_id[i]["element_type"], []).append(i)
+    if sorted((k, len(v)) for k, v in by_pos_out.items()) != \
+       sorted((k, len(v)) for k, v in by_pos_in.items()):
+        shape_out = {k: len(v) for k, v in by_pos_out.items()}
+        shape_in = {k: len(v) for k, v in by_pos_in.items()}
+        return None, f"positional shape differs - out {shape_out} vs in {shape_in}"
+    pairs = []
+    for pos, outs in by_pos_out.items():
+        for o, i in zip(outs, by_pos_in[pos]):
+            pairs.append({"out": elements_by_id[o]["web_name"],
+                          "in": elements_by_id[i]["web_name"]})
+    return pairs, f"{len(pairs)} net transfer(s) to match the target squad"
+
+
 def squad_converges(fix_squad, projected_ids, idx, bootstrap, elements_by_id):
     """Would the projected squad be exactly the target manager's 15?
 
@@ -706,7 +753,19 @@ def main():
     # earlier in it. Evaluating once, in Fix's order, discarded transfers that the
     # squad could actually afford. Defer affordability failures and re-run until a
     # pass applies nothing; whatever is still deferred then is genuinely unaffordable.
-    pending = list(fix["transfers"])
+    # Prefer the net diff to the target squad over replaying the transfer log; the log
+    # is chronological and can contain reversals FPL will reject as a batch.
+    net_pairs, net_note = plan_net_transfers(fix.get("squad"), squad_ids, idx, bootstrap,
+                                             elements_by_id)
+    if net_pairs is None:
+        log(f"[plan] falling back to the transfer log: {net_note}")
+        pending = list(fix["transfers"])
+    else:
+        log(f"[plan] {net_note}")
+        if DEBUG:
+            for pr in net_pairs:
+                log(f"[plan]   {pr['out']} -> {pr['in']}")
+        pending = list(net_pairs)
     while pending:
         deferred = []
         applied_this_pass = False
