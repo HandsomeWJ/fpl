@@ -16,7 +16,13 @@
   "gw3:Jo\u00e3o Pedro->Isak",
   "gw3:McBurnie->Haaland",
   "gw4:Raya->Kelleher",
-  "gw4:Scherpen->Leno"
+  "gw4:Scherpen->Leno",
+  "gw4:Kelleher->Raya",
+  "gw4:Leno->Scherpen",
+  "gw4:Virgil->N.Williams",
+  "gw4:Wirtz->Rogers",
+  "gw4:B.Fernandes->Mbeumo",
+  "gw4:Canvot->Tarkowski"
  ],
  "chips_done": [],
  "notified": [
