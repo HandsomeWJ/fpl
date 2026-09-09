@@ -68,6 +68,12 @@ DEBUG = os.environ.get("DEBUG") == "1"
 # one to a partial mirror spends a chip worth a full rebuild on a handful of swaps.
 # Held back unless explicitly enabled.
 ALLOW_TRANSFER_CHIP = os.environ.get("ALLOW_TRANSFER_CHIP") == "1"
+# Normally we never take a points hit automatically (hard requirement). ALLOW_HITS=1
+# lifts that for a deliberate catch-up, e.g. after a Free Hit reverts the squad.
+ALLOW_HITS = os.environ.get("ALLOW_HITS") == "1"
+# Exclude the target manager's N most recent transfers from the target squad, so their
+# latest move can be tested on its own instead of arriving with a catch-up batch.
+HOLD_LATEST_TRANSFERS = int(os.environ.get("HOLD_LATEST_TRANSFERS") or 0)
 
 
 def _desc(m):
@@ -866,7 +872,14 @@ def main():
     # pass applies nothing; whatever is still deferred then is genuinely unaffordable.
     # Prefer the net diff to the target squad over replaying the transfer log; the log
     # is chronological and can contain reversals FPL will reject as a batch.
-    net_pairs, net_note = plan_net_transfers(fix.get("squad"), squad_ids, idx, bootstrap,
+    target_squad = list(fix.get("squad") or [])
+    if HOLD_LATEST_TRANSFERS and fix.get("transfers"):
+        for tr in fix["transfers"][-HOLD_LATEST_TRANSFERS:]:
+            if tr["in"] in target_squad:
+                target_squad[target_squad.index(tr["in"])] = tr["out"]
+                log(f"[plan] holding back their {tr['out']} -> {tr['in']}; "
+                    f"targeting {tr['out']} instead")
+    net_pairs, net_note = plan_net_transfers(target_squad, squad_ids, idx, bootstrap,
                                              elements_by_id)
     if net_pairs is None:
         pending = net_out_transfer_log(fix["transfers"])
@@ -958,7 +971,7 @@ def main():
     # projected post-transfer squad.
     if active_chip_fpl in TRANSFER_CHIPS:
         held = active_chip_fpl
-        converged, why = squad_converges(fix.get("squad"), squad_ids, idx, bootstrap,
+        converged, why = squad_converges(target_squad, squad_ids, idx, bootstrap,
                                          elements_by_id)
         if converged:
             log(f"Playing chip {held}: {why}.")
@@ -980,9 +993,15 @@ def main():
     if not unlimited and active_chip_fpl not in TRANSFER_CHIPS:
         allowed = max((free_transfers or 0) - made, 0)
         if len(to_apply) > allowed:
-            for tr, _, _, _, _, _ in to_apply[allowed:]:
-                skipped.append((tr, f"would need a -4 hit (only {allowed} free transfer(s) left)"))
-            to_apply = to_apply[:allowed]
+            if ALLOW_HITS:
+                extra = len(to_apply) - allowed
+                log(f"TAKING HITS: {len(to_apply)} transfer(s) with {allowed} free -> "
+                    f"{extra} x -4 = -{extra * 4} points (ALLOW_HITS=1).")
+            else:
+                for tr, _, _, _, _, _ in to_apply[allowed:]:
+                    skipped.append((tr, f"would need a -4 hit "
+                                        f"(only {allowed} free transfer(s) left)"))
+                to_apply = to_apply[:allowed]
 
     # ---------- 3) submit
     if to_apply:
