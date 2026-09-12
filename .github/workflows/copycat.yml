@@ -38,8 +38,8 @@ on:
         description: "Only dump the reveal page structure and exit (1 = yes)"
         default: "0"
       allow_hits:
-        description: "Permit -4 point hits to catch up (1 = yes). Normally 0."
-        default: "0"
+        description: "Permit -4 point hits (1 = yes). Owner decision 2026-09-12: ON by default on the test account so transfers land before the price change. Pass 0 to suppress."
+        default: "1"
       hold_latest:
         description: "Exclude the target's N most recent transfers from the target squad"
         default: "0"
@@ -82,7 +82,7 @@ jobs:
           DEBUG: ${{ github.event.inputs.debug || '0' }}
           ALLOW_TRANSFER_CHIP: ${{ github.event.inputs.allow_transfer_chip || '0' }}
           DUMP_REVEAL: ${{ github.event.inputs.dump_reveal || '0' }}
-          ALLOW_HITS: ${{ github.event.inputs.allow_hits || '0' }}
+          ALLOW_HITS: ${{ github.event.inputs.allow_hits || '1' }}
           HOLD_LATEST_TRANSFERS: ${{ github.event.inputs.hold_latest || '0' }}
           SCHEDULED: ${{ github.event.inputs.scheduled || '0' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

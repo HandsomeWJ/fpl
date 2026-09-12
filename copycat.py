@@ -13,8 +13,9 @@ Rules implemented:
      transfer list, which is a chronological log and can contain reversals that FPL
      rejects as a batch. See plan_net_transfers() and CLAUDE.md.
   3. Transfers that don't map cleanly are SKIPPED and reported (GitHub issue).
-  4. Without an active WC/FH, only as many transfers as you have free transfers are applied;
-     the rest are skipped and reported (no automatic -4 hits).
+  4. Without an active WC/FH, transfers beyond your free ones cost -4 each. ALLOW_HITS
+     (workflow default 1 on the test account) takes them; with 0 they are skipped and
+     reported instead.
   5. State is kept in state/state.json so the same transfer/skip is not re-processed every run.
 
 Required environment variables:
@@ -68,8 +69,9 @@ DEBUG = os.environ.get("DEBUG") == "1"
 # one to a partial mirror spends a chip worth a full rebuild on a handful of swaps.
 # Held back unless explicitly enabled.
 ALLOW_TRANSFER_CHIP = os.environ.get("ALLOW_TRANSFER_CHIP") == "1"
-# Normally we never take a points hit automatically (hard requirement). ALLOW_HITS=1
-# lifts that for a deliberate catch-up, e.g. after a Free Hit reverts the squad.
+# Owner decision 2026-09-12: copying Tom's transfers before the daily price change
+# outranks avoiding -4s, so the workflow defaults ALLOW_HITS=1 on the TEST account.
+# Revisit before pointing this at the main account.
 ALLOW_HITS = os.environ.get("ALLOW_HITS") == "1"
 # Exclude the target manager's N most recent transfers from the target squad, so their
 # latest move can be tested on its own instead of arriving with a catch-up batch.

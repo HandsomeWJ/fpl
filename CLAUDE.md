@@ -13,9 +13,12 @@ owner's machine is off. The cron fires every 15 min but is gated — see
    WC/FH are attached to the transfer POST itself; BB/TC are activated first via the
    my-team endpoint. This ordering is critical.
 2. Fully automatic — no confirmation before submitting.
-3. Transfers that don't map cleanly (we don't own the out-player, can't afford the
-   in-player, 3-per-club violation, would need a -4 hit, ambiguous player name) are
-   SKIPPED and reported as a GitHub issue on this repo. Never take -4 hits automatically.
+3. Transfers that don't map cleanly (can't afford the in-player, 3-per-club violation,
+   ambiguous player name) are SKIPPED and reported as a GitHub issue on this repo.
+   **-4 hits ARE taken automatically** (`ALLOW_HITS` defaults to 1 in the workflow) —
+   owner decision 2026-09-12: landing Tom's transfers before the daily price change
+   outranks avoiding hits. This is set for the TEST account; decide again before
+   switching `FPL_ENTRY` to the main account. Pass `allow_hits=0` to suppress.
 4. Nothing is submitted after the GW deadline; Fix's "Gameweek N" transfer label must
    match the open FPL gameweek.
 
@@ -165,7 +168,7 @@ application simply yields a smaller diff next time, and a fully-mirrored squad y
 `[plan] already matching` and does nothing. There is no state to corrupt.
 
 **What legitimately stops it**, all reported as issues rather than failing silently:
-- No free transfers left and no chip → skipped rather than taking an automatic -4.
+- (Only if `allow_hits=0`) no free transfers left and no chip → skipped rather than a -4.
 - Genuinely unaffordable after all sales are applied.
 - 3-per-club violation, unavailable player, ambiguous name.
 - Squad won't converge → WC/FH held back with the exact difference named.
