@@ -111,6 +111,12 @@ automatically on convergence. Auth, token rotation and persistence green since
 2026-08-25. Only remaining step: switch `FPL_REFRESH_TOKEN` + `FPL_ENTRY` to the
 MAIN account (currently the test account, 7953181).
 
+**Before switching to the main account, decide these test-account defaults again:**
+- `ALLOW_HITS` defaults to **1** in the workflow (owner decision 2026-09-12, so Tom's
+  transfers land before the daily price change even when they cost -4). On the main
+  account that is real points — likely set back to 0, or add a per-GW cap.
+- `HOLD_LATEST_TRANSFERS`, `ALLOW_TRANSFER_CHIP` are 0 by default and fine as-is.
+
 ### Scheduler decision (APPROVED 2026-09-12 — external clock via workflow_dispatch)
 **Finding (verified):** GitHub Actions `schedule` is best-effort and is dropping most
 firings. GW4 deadline day, 2026-09-12: **3 of ~48** scheduled runs fired; **none between
