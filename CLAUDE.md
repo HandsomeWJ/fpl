@@ -108,7 +108,7 @@ automatically on convergence. Auth, token rotation and persistence green since
 2026-08-25. Only remaining step: switch `FPL_REFRESH_TOKEN` + `FPL_ENTRY` to the
 MAIN account (currently the test account, 7953181).
 
-### Scheduler decision (open as of 2026-09-12 — owner has not yet approved)
+### Scheduler decision (APPROVED 2026-09-12 — external clock via workflow_dispatch)
 **Finding (verified):** GitHub Actions `schedule` is best-effort and is dropping most
 firings. GW4 deadline day, 2026-09-12: **3 of ~48** scheduled runs fired; **none between
 09:11Z and the 12:30Z deadline** — a 3h blackout covering the moment Tom activated TC
@@ -124,8 +124,31 @@ with body `{"ref":"main"}` and a PAT holding *Actions: read and write*. Keep the
 as a fallback only. The existing gate makes the extra firings free (one unauthenticated
 GET when there is nothing to do).
 
-**Until then:** on deadline day, dispatch manually inside the last few hours —
-`gh workflow run copycat.yml -R HandsomeWJ/fpl` — and do not assume the cron ran.
+**Setup (cron-job.org, free):** every 15 min, `POST` to
+`https://api.github.com/repos/HandsomeWJ/fpl/actions/workflows/copycat.yml/dispatches`
+with headers `Authorization: Bearer <fpl-scheduler PAT>`, `Accept: application/vnd.github+json`,
+`Content-Type: application/json`, `User-Agent: fpl-copycat-scheduler`, and body
+`{"ref":"main","inputs":{"scheduled":"1"}}`. Success is **204 No Content**. The PAT is a
+dedicated fine-grained token, repo `HandsomeWJ/fpl` only, permission *Actions: read and
+write* — kept separate from `GH_PAT` so neither scope leaks into the other.
+
+**`inputs.scheduled=1` is essential.** It makes the dispatch go through
+`should_run_now()` like cron. Without it every dispatch is treated as a human run and
+bypasses the gate: 96 full runs a day, each an FPL auth and a Fix fetch. Verified
+2026-09-12: a `scheduled=1` dispatch logs a `[gate]` line; a plain one does not.
+
+**Top priority is copying Tom's transfers before the daily price change.** In SGT the
+work window is 04:37–06:52 (summer) / 05:37–07:52 (winter), ~10 firings, last one
+8 min before prices move. Prices change only at midnight UK, so a transfer Tom makes at
+any time of day is bought at the same price he paid as long as one of those firings
+runs — the scheduler's job is to make that certain.
+
+**Verify after setup:** `gh run list -R HandsomeWJ/fpl --event workflow_dispatch` should
+show a run every ~15 min whose log has `SCHEDULED: 1`. If the cron fallback ever
+matters again, the ratio of `schedule` to `workflow_dispatch` runs shows it.
+
+**If the scheduler is down:** on deadline day dispatch manually inside the last few
+hours — `gh workflow run copycat.yml -R HandsomeWJ/fpl` — and do not assume anything ran.
 
 ### How automatic mirroring works (the whole point of the project)
 Every gated run, with no human in the loop:
