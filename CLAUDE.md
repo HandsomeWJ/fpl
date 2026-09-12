@@ -93,7 +93,16 @@ If the squad can't be parsed or resolved, the fallback replays the log — but
 `net_out_transfer_log` cancels round trips first, so even the degraded path can't
 submit a self-contradicting batch.
 
-## Status (2026-09-04) — mirroring fully automatic and verified live
+### A picks POST without a chip key CANCELS an active 3xc/bboost (found GW4, 2026-09-12)
+`POST /api/my-team/{entry}/` with `{"picks": [...]}` and no `chip` key deactivates a
+pending Triple Captain / Bench Boost. Transfer chips (FH/WC) live on the transfers
+endpoint and are unaffected — which is why FH survived the lineup save in GW3 and TC
+did not in GW4: activated at step 1, wiped by the lineup save at step 4, and the run
+still reported success. `sync_lineup` now re-sends the active my-team chip
+(`team_chip`), and chip activation checks **live** status instead of skipping on
+`state["chips_done"]`, so an undone chip is redone rather than trusted as done.
+
+## Status (2026-09-12) — mirroring verified live in GW3 and GW4; scheduler is the open risk
 GW3: 12 net transfers applied unattended, squad matches Tom exactly, Free Hit played
 automatically on convergence. Auth, token rotation and persistence green since
 2026-08-25. Only remaining step: switch `FPL_REFRESH_TOKEN` + `FPL_ENTRY` to the
@@ -185,6 +194,16 @@ The cron fires **every 15 min at :07/:22/:37/:52**, but `should_run_now()` in
 | Work window | 04:37 - 06:52 SGT | 05:37 - 07:52 SGT |
 
 The last firing lands ~8 min before the change.
+
+**GitHub's cron is not reliable enough for a deadline-driven tool — full stop.**
+Off-the-hour helped but did not fix it. GW4 deadline day (2026-09-12, deadline
+12:30Z): **3 scheduled firings all day out of ~48**, and **zero between 09:11Z and
+the deadline** — the exact 3h in which Tom activated TC and made a transfer (11:23Z).
+Nothing mirrored until a manual dispatch at 12:07Z. `workflow_dispatch` events are
+API calls, not best-effort queue items, and have never been dropped here; the fix is
+an external scheduler (e.g. cron-job.org) POSTing
+`/repos/HandsomeWJ/fpl/actions/workflows/copycat.yml/dispatches` every 15 min with
+a PAT that has Actions: read/write. Keep the cron as a fallback only.
 
 **Never schedule this on the hour.** GitHub delays scheduled runs under load and
 :00 is peak congestion. Measured here: `0 * * * *` delivered **13%** of its firings
