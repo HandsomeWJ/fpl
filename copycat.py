@@ -667,7 +667,8 @@ def squad_converges(fix_squad, projected_ids, idx, bootstrap, elements_by_id):
     return False, f"would still differ - missing {missing}, holding {extra}"
 
 
-def sync_lineup(s_sess, entry, picks, fix, idx, bootstrap, elements_by_id, dry):
+def sync_lineup(s_sess, entry, picks, fix, idx, bootstrap, elements_by_id, dry,
+                chip=None):
     """Match the target manager's starting XI, bench order and armbands.
 
     Only safe once the squad already matches theirs, so the caller gates on
@@ -724,8 +725,13 @@ def sync_lineup(s_sess, entry, picks, fix, idx, bootstrap, elements_by_id, dry):
     note = (f"XI/bench reordered, captain {cname}, vice {vname}")
     if dry:
         return False, f"[dry-run] would set {note}"
-    # picks only - deliberately no "chip" key, so an active chip is left untouched.
-    r = s_sess.post(f"{FPL}/api/my-team/{entry}/", json={"picks": new_picks}, timeout=60)
+    # The active my-team chip MUST be re-sent: a picks POST without it cancels the
+    # chip. Transfer chips (FH/WC) live on the transfers endpoint and are unaffected,
+    # so the key is omitted rather than sent as null when there is none.
+    payload = {"picks": new_picks}
+    if chip:
+        payload["chip"] = chip
+    r = s_sess.post(f"{FPL}/api/my-team/{entry}/", json=payload, timeout=60)
     if r.status_code >= 400:
         return False, f"FAILED {r.status_code} {r.text[:200]}"
     return True, note
@@ -809,6 +815,12 @@ def main():
 
     # ---------- 1) chips first (VERY IMPORTANT: before any transfers)
     active_chip_fpl = None
+    # my-team chip (3xc/bboost) that must ride along on every later picks POST -
+    # a picks save without it silently CANCELS the chip (learned GW4: TC activated,
+    # then the lineup save wiped it).
+    team_chip = next((n for n, c in my_chips.items()
+                      if n not in TRANSFER_CHIPS and c.get("status_for_entry") == "active"),
+                     None)
     for fix_label, status in fix["chips"].items():
         if status != "active":
             continue
@@ -827,11 +839,11 @@ def main():
                     f"'{mine.get('status_for_entry')}' (not available).")
                 active_chip_fpl = None
         else:
-            if chip_key in state["chips_done"]:
-                continue
+            # Live status is authoritative; chips_done is only a record. A chip we
+            # "did" can be undone by a later picks POST, so never skip on the record.
             if mine and mine.get("status_for_entry") == "active":
                 log(f"Chip {chip_name} already active on my team.")
-                state["chips_done"].append(chip_key)
+                team_chip = chip_name
                 continue
             if not mine or mine.get("status_for_entry") != "available":
                 log(f"SKIP chip {chip_name}: not available on my team "
@@ -849,7 +861,9 @@ def main():
                 if r.status_code >= 400:
                     log(f"ERROR activating {chip_name}: {r.status_code} {r.text[:300]}")
                     continue
-            state["chips_done"].append(chip_key)
+            team_chip = chip_name
+            if chip_key not in state["chips_done"]:
+                state["chips_done"].append(chip_key)
             changed = True
 
     # ---------- 2) map transfers
@@ -1062,7 +1076,7 @@ def main():
             fresh = picks
             log(f"[lineup] could not re-read squad ({e}); using the pre-transfer picks")
         lineup_changed, lineup_note = sync_lineup(s, entry, fresh, fix, idx, bootstrap,
-                                                  elements_by_id, dry)
+                                                  elements_by_id, dry, chip=team_chip)
         log(f"[lineup] {lineup_note}")
         changed = changed or lineup_changed
 
