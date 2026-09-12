@@ -108,6 +108,25 @@ automatically on convergence. Auth, token rotation and persistence green since
 2026-08-25. Only remaining step: switch `FPL_REFRESH_TOKEN` + `FPL_ENTRY` to the
 MAIN account (currently the test account, 7953181).
 
+### Scheduler decision (open as of 2026-09-12 — owner has not yet approved)
+**Finding (verified):** GitHub Actions `schedule` is best-effort and is dropping most
+firings. GW4 deadline day, 2026-09-12: **3 of ~48** scheduled runs fired; **none between
+09:11Z and the 12:30Z deadline** — a 3h blackout covering the moment Tom activated TC
+and made his transfer (11:23Z). Nothing mirrored until a manual dispatch at 12:07Z.
+Earlier data: `0 * * * *` ≈13% delivery, `*/15` ≈54%; off-the-hour minutes did not fix it.
+
+**Contrast:** every `workflow_dispatch` this project has ever sent fired within
+seconds. Dispatch is an API call, not a queued schedule item.
+
+**Recommended fix:** an external scheduler (e.g. cron-job.org) POSTing every 15 min to
+`https://api.github.com/repos/HandsomeWJ/fpl/actions/workflows/copycat.yml/dispatches`
+with body `{"ref":"main"}` and a PAT holding *Actions: read and write*. Keep the cron
+as a fallback only. The existing gate makes the extra firings free (one unauthenticated
+GET when there is nothing to do).
+
+**Until then:** on deadline day, dispatch manually inside the last few hours —
+`gh workflow run copycat.yml -R HandsomeWJ/fpl` — and do not assume the cron ran.
+
 ### How automatic mirroring works (the whole point of the project)
 Every gated run, with no human in the loop:
 1. Parse Tom's **full 15** from the reveal page front face.
