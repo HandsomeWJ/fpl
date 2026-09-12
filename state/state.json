@@ -22,9 +22,12 @@
   "gw4:Virgil->N.Williams",
   "gw4:Wirtz->Rogers",
   "gw4:B.Fernandes->Mbeumo",
-  "gw4:Canvot->Tarkowski"
+  "gw4:Canvot->Tarkowski",
+  "gw4:Ndiaye->Saka"
  ],
- "chips_done": [],
+ "chips_done": [
+  "gw4:3xc"
+ ],
  "notified": [
   "gw3:Calvert-Lewin->Wissa:I don't own Calvert-Lewin",
   "gw3:Maguire->Gvardiol:can't afford Gvardiol (need 5.6, have 5.0)",
