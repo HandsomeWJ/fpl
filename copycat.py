@@ -337,7 +337,12 @@ def should_run_now():
     before the open gameweek's deadline. Fails OPEN - if the deadline can't be read
     the run proceeds, because missing a deadline is far worse than a wasted run.
     """
-    if os.environ.get("GITHUB_EVENT_NAME", "") != "schedule":
+    # GitHub's cron drops most firings (GW4: 3 of ~48), so the reliable clock is an
+    # external scheduler calling workflow_dispatch with inputs.scheduled=1. Those
+    # must go through the gate exactly like cron; only a human dispatch bypasses it.
+    is_clock = (os.environ.get("GITHUB_EVENT_NAME", "") == "schedule"
+                or os.environ.get("SCHEDULED") == "1")
+    if not is_clock:
         return True                      # manual dispatch always runs
     now = datetime.now(timezone.utc)
     mins = minutes_to_price_change(now)

@@ -2,6 +2,10 @@ name: FPL Copycat
 
 on:
   schedule:
+    # FALLBACK ONLY. GitHub drops most cron firings (GW4 deadline day: 3 of ~48, none
+    # in the final 3h). The primary clock is an external scheduler (cron-job.org)
+    # dispatching this workflow every 15 min with inputs.scheduled=1 - see CLAUDE.md.
+    #
     # Fires every 15 min, but copycat.py's should_run_now() gate makes almost every
     # run a no-op. Real work happens only in the 150min before the FPL price change
     # and in the 6h before a gameweek deadline. In the owner's clock (SGT):
@@ -38,6 +42,9 @@ on:
         default: "0"
       hold_latest:
         description: "Exclude the target's N most recent transfers from the target squad"
+        default: "0"
+      scheduled:
+        description: "Set by the external scheduler: behave like cron (gated). Leave 0 for a manual run."
         default: "0"
 
 permissions:
@@ -77,6 +84,7 @@ jobs:
           DUMP_REVEAL: ${{ github.event.inputs.dump_reveal || '0' }}
           ALLOW_HITS: ${{ github.event.inputs.allow_hits || '0' }}
           HOLD_LATEST_TRANSFERS: ${{ github.event.inputs.hold_latest || '0' }}
+          SCHEDULED: ${{ github.event.inputs.scheduled || '0' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python copycat.py
 
