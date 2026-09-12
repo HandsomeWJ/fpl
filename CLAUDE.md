@@ -117,7 +117,15 @@ MAIN account (currently the test account, 7953181).
   account that is real points — likely set back to 0, or add a per-GW cap.
 - `HOLD_LATEST_TRANSFERS`, `ALLOW_TRANSFER_CHIP` are 0 by default and fine as-is.
 
-### Scheduler decision (APPROVED 2026-09-12 — external clock via workflow_dispatch)
+### Scheduler — LIVE since 2026-09-12 12:45Z (cron-job.org → workflow_dispatch)
+Job "FPL copycat dispatch (every 15 min)" on the owner's cron-job.org account, using a
+dedicated fine-grained PAT `fpl-scheduler` (repo `HandsomeWJ/fpl` only, *Actions: read
+and write*, **no expiration** — chosen deliberately so the clock cannot silently expire).
+First firing landed 16s after schedule with `SCHEDULED: 1` and a `[gate]` line. If runs
+stop arriving, check cron-job.org's job HISTORY first (it records the HTTP status of each
+call; 204 = accepted), then the PAT.
+
+#### Original decision record
 **Finding (verified):** GitHub Actions `schedule` is best-effort and is dropping most
 firings. GW4 deadline day, 2026-09-12: **3 of ~48** scheduled runs fired; **none between
 09:11Z and the 12:30Z deadline** — a 3h blackout covering the moment Tom activated TC
