@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-14T22:15:26+00:00",
+ "ts": "2026-09-14T22:30:35+00:00",
  "kind": "run",
  "event_id": 5,
  "deadline": "2026-09-18T17:30:00Z",
@@ -221,7 +221,8 @@
  "result": "nothing",
  "early_exit": "",
  "log": [
-  "[gate] 45min to the price change; running.",
+  "[snapshot] wrote data/prices/2026-09-14/pre.json.gz (659 players, pre for 2026-09-14)",
+  "[gate] 29min to the price change; running.",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 14, 2026, 4:33 p.m.",
   "[plan] already matching",
   "[lineup] lineup already matches"
