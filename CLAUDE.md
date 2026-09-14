@@ -242,6 +242,8 @@ groups by stop_event, marks unused chips expired after the window, and the plann
 values chips inside the live window. `rec.team.players` (purchase/selling/now prices)
 was added to the preview record for the value tracker (workflow runs from main; no
 core tag bump needed for data-only changes).
+Railway's builder OOM-kills `tsc -b && vite build` (exit 137) once the web app grew; the
+Dockerfile runs `npx vite build` only and CI does the type-check.
 
 ### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
