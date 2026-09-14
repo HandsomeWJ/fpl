@@ -191,7 +191,7 @@ hours — `gh workflow run copycat.yml -R HandsomeWJ/fpl` — and do not assume 
 Plan: https://claude.ai/code/artifact/08e05a10-a932-4945-8831-5d6b133f5d95. Decisions
 taken: build the app AROUND this automation (execution stays here until the app has
 run side-by-side for a full gameweek), FastAPI + Postgres + React/Vite, Telegram
-alerts, new **private** repo `fpl-copycat-app` importing `copycat_core`.
+alerts, new **private** repo `fpl-copycat-app` (now `fpl-dugout`) importing `copycat_core`.
 **Do first, before any UI:** a daily `bootstrap-static` snapshot into Postgres.
 FPL publishes no price history, so every day without a snapshot is price-analytics
 data that can never be recovered. **Tom's FPL entry id: 179777** (verified 2026-09-14 via `/api/entry/179777/`: Tom
