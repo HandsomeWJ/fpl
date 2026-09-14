@@ -244,6 +244,8 @@ was added to the preview record for the value tracker (workflow runs from main; 
 core tag bump needed for data-only changes).
 Railway's builder OOM-kills `tsc -b && vite build` (exit 137) once the web app grew; the
 Dockerfile runs `npx vite build` only and CI does the type-check.
+SPA shell is served `Cache-Control: no-cache` and `/assets/*` immutable (2026-09-14): a
+phone had cached index.html and fetched a stale CSS hash after a deploy -> unstyled page.
 
 ### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
