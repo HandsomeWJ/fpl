@@ -220,6 +220,14 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
 - Control-room UI is served from the same container at the root URL (root `Dockerfile`
   builds `web/`, FastAPI `StaticFiles` mounted after the API routes). Service root
   directory is `/`.
+- **Analytics tab (2026-09-14, advisory):** `/api/analytics/{projections,recommend,
+  fixtures,players/{id}}`. xPts model = `api/app/projections.py` (docstring is the spec;
+  shown in the UI). Season-2026/27 gotchas: team `strength_*` fields are all 0 in
+  bootstrap, so opponent quality = season xG/xGC shrunk to league mean x FDR; fixture
+  `finished` lags a day or two, so games played counts `started` matches. Model vs
+  FPL `ep_next`: ~0.76 correlation on starters. Recommender uses the public picks of
+  the CURRENT gameweek (transfers since its deadline are invisible), selling price =
+  current price, -4 beyond free transfers (free count from the preview record).
 
 ### The app repo: `HandsomeWJ/fpl-copycat-app` (private, created 2026-09-14)
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
