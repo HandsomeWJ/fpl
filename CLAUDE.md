@@ -23,14 +23,33 @@ owner's machine is off. The cron fires every 15 min but is gated — see
    match the open FPL gameweek.
 
 ## Files
-- `copycat.py` — the whole pipeline (fetch Fix reveal HTML → parse chips/transfers →
-  read FPL team → chip first → map → two-phase POST → report). Well-commented.
-- `test_local.py` — mocked end-to-end test (`python3 test_local.py`, needs
-  requests + beautifulsoup4). Keep it passing.
+- `copycat.py` — thin entry point (`python copycat.py`), kept so the workflow is unchanged.
+- `copycat_core/` — the logic, extracted in Phase 0 (2026-09-14) behind three ports so the
+  web app can swap in Postgres / encrypted tokens / Telegram without touching it:
+  - `settings.py` env → `Settings` (the only place that reads `os.environ`)
+  - `ports.py` `StateStore` / `TokenStore` / `Notifier` + GitHub adapters (JSON state
+    file, `FPL_TOKENS` Actions variable, deduped GitHub issues) + in-memory fakes
+  - `fix.py` reveal-page parsing — `parse_reveal(html, name)` is pure
+  - `fpl.py` OIDC token rotation (`TokenManager`), session, API reads
+  - `plan.py` name matching, net diff, order-aware affordability, chip decision, hits
+  - `schedule.py` midnight-UK price clock and the run gate
+  - `execute.py` chip activation, two-phase submit + squad verify, lineup sync
+  - `runner.py` orchestration (`run(settings, deps)`) and `cli()`
+- `tests/` — pytest suite, 42 tests. **Every hard-won lesson in this file is a test**:
+  front-face-only squad parse, transfer-log netting, GW3 affordability ordering,
+  convergence-gated chips, duplicate `confirmed:true` rejection treated as applied,
+  my-team chip carried on lineup saves, persist-failure escalation, and end-to-end
+  dry/live runs pinning the exact log lines. Run `python -m pytest -q`; CI runs it on
+  every push (`.github/workflows/tests.yml`). `tests/fixtures/reveal_synthetic.html`
+  reproduces the reveal page's STRUCTURE (not its content) from a class-tree dump.
 - `state/state.json` — dedup state, committed back by the workflow after each run.
   The persist step **retries and then fails red**; it must never swallow a push
   failure, because losing this file makes a later run report an already-mirrored
   transfer as "I don't own X".
+- **Phase 0 acceptance (2026-09-14):** the pre-refactor commit (tag `pre-phase0`) and
+  the package were dispatched against live FPL in the same minute; the Run-copycat logs
+  were identical line for line (one `[tokens] refreshed` line differed only because
+  the first run refreshed an expired token into the shared store for the second).
 
 ## Auth (2026/27 FPL site — cookies pl_profile/datadome are gone)
 - FPL uses OIDC: authority `https://account.premierleague.com/as`, public client id
@@ -105,7 +124,7 @@ still reported success. `sync_lineup` now re-sends the active my-team chip
 (`team_chip`), and chip activation checks **live** status instead of skipping on
 `state["chips_done"]`, so an undone chip is redone rather than trusted as done.
 
-## Status (2026-09-12) — mirroring verified live in GW3 and GW4; scheduler is the open risk
+## Status (2026-09-14) — Phase 0 done: core extracted + tested; mirroring live since GW3
 GW3: 12 net transfers applied unattended, squad matches Tom exactly, Free Hit played
 automatically on convergence. Auth, token rotation and persistence green since
 2026-08-25. Only remaining step: switch `FPL_REFRESH_TOKEN` + `FPL_ENTRY` to the
