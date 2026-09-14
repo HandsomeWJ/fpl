@@ -1,0 +1,106 @@
+{
+ "ts": "2026-09-14T08:14:54+00:00",
+ "kind": "preview",
+ "event_id": 5,
+ "deadline": "2026-09-18T17:30:00Z",
+ "dry": true,
+ "entry": 7953181,
+ "target": "Tom Dollimore",
+ "fix": {
+  "updated": "Sept. 12, 2026, 11:23 a.m.",
+  "gw": 5,
+  "chips": {
+   "WC1": "available",
+   "WC2": "available",
+   "TC": "gw 4",
+   "FH": "gw 3",
+   "BB": "gw 1"
+  },
+  "transfers": [],
+  "squad": [
+   "Raya",
+   "Gabriel",
+   "Tarkowski",
+   "N.Williams",
+   "Saka",
+   "Palmer",
+   "Rogers",
+   "Mbeumo",
+   "Szoboszlai",
+   "Calvert-Lewin",
+   "João Pedro",
+   "Scherpen",
+   "McBurnie",
+   "Maguire",
+   "O'Shea"
+  ],
+  "starters": [
+   "Raya",
+   "Gabriel",
+   "Tarkowski",
+   "N.Williams",
+   "Saka",
+   "Palmer",
+   "Rogers",
+   "Mbeumo",
+   "Szoboszlai",
+   "Calvert-Lewin",
+   "João Pedro"
+  ],
+  "bench": [
+   "Scherpen",
+   "McBurnie",
+   "Maguire",
+   "O'Shea"
+  ],
+  "captain": "Palmer",
+  "vice": "João Pedro"
+ },
+ "team": {
+  "bank": 7,
+  "free_transfers": 1,
+  "made": 0,
+  "squad": [
+   "Raya",
+   "Gabriel",
+   "Tarkowski",
+   "N.Williams",
+   "Saka",
+   "Palmer",
+   "Rogers",
+   "Mbeumo",
+   "Szoboszlai",
+   "Calvert-Lewin",
+   "João Pedro",
+   "Scherpen",
+   "McBurnie",
+   "Maguire",
+   "O'Shea"
+  ],
+  "chips": {
+   "bboost": "available",
+   "3xc": "played",
+   "wildcard": "available",
+   "freehit": "played"
+  }
+ },
+ "plan_note": "already matching",
+ "pairs": [],
+ "to_apply": [],
+ "skipped": [],
+ "hits": {
+  "count": 0,
+  "points": 0
+ },
+ "chips_activated": [],
+ "transfer_chip": null,
+ "chip_held": null,
+ "lineup": "lineup already matches",
+ "result": "dry",
+ "early_exit": "",
+ "log": [
+  "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 12, 2026, 11:23 a.m.",
+  "[plan] already matching",
+  "[lineup] lineup already matches"
+ ]
+}
