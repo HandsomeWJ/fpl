@@ -257,6 +257,9 @@ run gate**, from the public endpoint (no FPL auth, cannot interfere with mirrori
 | `pre` | last 35 min before midnight | the predictive signal — `transfers_in/out_event`, ownership — at its most complete | overwritten within the window; latest wins |
 | `post` | first 75 min after midnight | the realised price change (`now_cost`, `cost_change_event`) | once |
 
+**Decided 2026-09-14: no price-change prediction feature.** The owner does not want it;
+snapshots stay only for the movers/risers/fallers views and history. Do not propose it.
+
 Files: `data/prices/<uk-date>/{pre,post}.json.gz` (slim players + teams + meta; ~30 KB
 each) and `data/prices/latest.json`. `<uk-date>` is the date the prices are in effect.
 The workflow's persist step commits `data/prices` alongside `state/state.json`.
