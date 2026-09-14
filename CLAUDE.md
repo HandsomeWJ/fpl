@@ -229,6 +229,16 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
   the CURRENT gameweek (transfers since its deadline are invisible), selling price =
   current price, -4 beyond free transfers (free count from the preview record).
 
+### Dugout analytics backlog (proposed 2026-09-14, not yet chosen by the owner)
+Built: xPts model, transfer recommender, captain picks, player explorer, fixture ticker,
+you-vs-Tom. Off the table: price-change prediction (owner decision). Proposed, in
+suggested order: cost of copying (score mirrored transfers with xPts + actuals, hits,
+reveal-to-execution lag) -> chip planner (BB/TC fixture swings, FH gain over current
+squad) -> bench/formation optimiser vs what the run set -> team value + sell-on profit
+-> player detail page (history, xG over/under, ownership, price from snapshots) ->
+differentials / effective ownership -> injury & rotation watch -> live GW scoreboard
+(public live endpoint) -> deadline briefing card -> mini-league dashboard.
+
 ### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
 title, packages or docs. Railway service renamed `dugout`, domain `fpl-dugout.up.railway.app` (old domain
