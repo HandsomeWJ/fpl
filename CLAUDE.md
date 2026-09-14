@@ -229,9 +229,9 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
   the CURRENT gameweek (transfers since its deadline are invisible), selling price =
   current price, -4 beyond free transfers (free count from the preview record).
 
-### The app repo: `HandsomeWJ/fpl-copycat-app` (private, created 2026-09-14) — the app is named **Dugout**
+### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
-title, packages or docs. The repo name, Railway service/domain and this executing repo are
+title, packages or docs. The Railway service/domain and this executing repo are
 unchanged. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
 titles — those names belong to this repo and stay.
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
@@ -239,7 +239,7 @@ snapshots this repo commits and shows countdowns/movers; execution stays here. I
 installs the logic as `copycat-core` from this repo at a pinned tag
 (`core-v0.1.0`; `pyproject.toml` here makes `copycat_core` pip-installable). To ship a
 core change to the app: tag here (`core-vX.Y.Z`), bump the pin in
-`fpl-copycat-app/api/pyproject.toml`. The core moves into the app repo at Phase 2.
+`fpl-dugout/api/pyproject.toml`. The core moves into the app repo at Phase 2.
 
 ### Run records for the app (LIVE from 2026-09-14) — `copycat_core/record.py`
 Every run writes `data/preview/latest.json` (the plan it computed: fix reveal, live team,
