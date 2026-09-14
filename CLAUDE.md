@@ -235,7 +235,8 @@ title, packages or docs. Railway service renamed `dugout`, domain `fpl-dugout.up
 removed, 404s). Only this executing repo keeps the copycat name.
 Leftovers after the rename: Railway's Source panel showed "GitHub Repo not found" for the
 branch (webhook deploys still worked - Railway matches by repo id); re-selecting the repo
-triggers a GitHub sudo-mode/app-installation flow the owner must approve. Private hostname
+triggers a GitHub sudo-mode/app-installation flow the owner must approve (done 2026-09-14;
+auto-deploy from `fpl-dugout` verified with an empty commit; the red banner is cosmetic). Private hostname
 `fpl-copycat-app.railway.internal` (unused) and project name `intuitive-acceptance` untouched. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
 titles — those names belong to this repo and stay.
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
