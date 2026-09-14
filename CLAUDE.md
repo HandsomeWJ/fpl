@@ -234,7 +234,7 @@ Built (2026-09-14): xPts model, transfer recommender, captain picks, player expl
 fixture ticker, you-vs-Tom, **chip planner, best-XI optimiser, team value + sell-on
 profit, player detail page, differentials, effective ownership, injury watch** (tabs:
 Control room · Transfers · Squad · Players · Fixtures). Off the table: price-change
-prediction (owner decision). Still proposed: cost of copying, live GW scoreboard,
+prediction and cost-of-copying (owner decisions, 2026-09-14). Still proposed: live GW scoreboard,
 deadline briefing card, mini-league dashboard.
 **Chips reset mid-season** (owner flagged it): bootstrap `chips` has each chip once per
 window with start/stop events (2026/27: GW1|2-19, GW20-38); `planning.chip_state`
