@@ -186,6 +186,16 @@ matters again, the ratio of `schedule` to `workflow_dispatch` runs shows it.
 **If the scheduler is down:** on deadline day dispatch manually inside the last few
 hours — `gh workflow run copycat.yml -R HandsomeWJ/fpl` — and do not assume anything ran.
 
+### Next: Phase 1 (read-only control room) — prerequisites, decided 2026-09-14
+Plan: https://claude.ai/code/artifact/08e05a10-a932-4945-8831-5d6b133f5d95. Decisions
+taken: build the app AROUND this automation (execution stays here until the app has
+run side-by-side for a full gameweek), FastAPI + Postgres + React/Vite, Telegram
+alerts, new **private** repo `fpl-copycat-app` importing `copycat_core`.
+**Do first, before any UI:** a daily `bootstrap-static` snapshot into Postgres.
+FPL publishes no price history, so every day without a snapshot is price-analytics
+data that can never be recovered. Also needed early: Tom's FPL entry id (for the
+points comparison) — findable via a league he is in or FPL search.
+
 ### How automatic mirroring works (the whole point of the project)
 Every gated run, with no human in the loop:
 1. Parse Tom's **full 15** from the reveal page front face.
