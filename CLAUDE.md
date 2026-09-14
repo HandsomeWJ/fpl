@@ -197,6 +197,14 @@ FPL publishes no price history, so every day without a snapshot is price-analyti
 data that can never be recovered. Also needed early: Tom's FPL entry id (for the
 points comparison) — findable via a league he is in or FPL search.
 
+### The app repo: `HandsomeWJ/fpl-copycat-app` (private, created 2026-09-14)
+FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
+snapshots this repo commits and shows countdowns/movers; execution stays here. It
+installs the logic as `copycat-core` from this repo at a pinned tag
+(`core-v0.1.0`; `pyproject.toml` here makes `copycat_core` pip-installable). To ship a
+core change to the app: tag here (`core-vX.Y.Z`), bump the pin in
+`fpl-copycat-app/api/pyproject.toml`. The core moves into the app repo at Phase 2.
+
 ### Phase 1a — daily price snapshots (LIVE from 2026-09-14)
 FPL publishes no price history, so capture started immediately, in this repo, ahead of
 the app's database. `copycat_core/snapshot.py` runs on **every clock tick before the
