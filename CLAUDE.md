@@ -247,6 +247,19 @@ Dockerfile runs `npx vite build` only and CI does the type-check.
 SPA shell is served `Cache-Control: no-cache` and `/assets/*` immutable (2026-09-14): a
 phone had cached index.html and fetched a stale CSS hash after a deploy -> unstyled page.
 
+### Roadmap position (2026-09-14) — proposed order Phase 2 -> parallel GW -> Phase 4
+Phases 0, 1 and the analytics are done. Not yet decided by the owner; recorded as proposals:
+- **Phase 2 (execution into Dugout + Telegram).** Prerequisites the owner supplies
+  himself (never via the assistant): Telegram bot token + chat id pasted into Railway
+  variables; a fresh FPL refresh token seeded into Dugout from an incognito window.
+  Run Actions and Dugout side by side for one full gameweek before disabling Actions -
+  a duplicated transfer costs real hits.
+- **Phase 4 (main account).** Hit policy must be re-decided first. Recommendation on
+  the table: automatic hits capped at one -4 per gameweek, Telegram approval beyond
+  that (which is why Phase 2 comes first). Shortcut if the owner wants main sooner:
+  Phase 4 on the existing Actions job with `ALLOW_HITS=0`, accepting that a Tom move
+  costing a -4 waits for manual action.
+
 ### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
 title, packages or docs. Railway service renamed `dugout`, domain `fpl-dugout.up.railway.app` (old domain
