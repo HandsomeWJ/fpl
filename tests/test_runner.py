@@ -171,6 +171,7 @@ def test_live_run_writes_preview_and_ledger_records(reveal_html):
     assert {t["out"] for t in prev["to_apply"]} == {"Mbeumo", "Calvert-Lewin", "Maguire"}
     assert prev["transfer_chip"] == "freehit" and prev["hits"] == {"count": 0, "points": 0}
     assert prev["fix"]["captain"] == "B.Fernandes" and len(prev["team"]["squad"]) == 15
+    assert len(prev["team"]["players"]) == 15 and {"id", "selling_price", "now_cost"} <= set(prev["team"]["players"][0])
     assert any(l.startswith("Submitting 3 transfer(s)") for l in prev["log"])
     ledgers = glob.glob(os.path.join(settings.data_dir, "ledger", "*_gw3.json"))
     assert len(ledgers) == 1

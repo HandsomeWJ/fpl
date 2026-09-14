@@ -131,6 +131,13 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
     idx = build_player_index(bootstrap)
     rec.team = {"bank": bank, "free_transfers": free_transfers, "made": made,
                 "squad": [elements_by_id[p["element"]]["web_name"] for p in picks],
+                # per-player prices are private (my-team only); the app's value tracker
+                # reads them from the preview record. Tenths of GBPm, like FPL.
+                "players": [{"id": p["element"], "name": elements_by_id[p["element"]]["web_name"],
+                             "position": p.get("position"),
+                             "purchase_price": p.get("purchase_price"),
+                             "selling_price": p.get("selling_price"),
+                             "now_cost": elements_by_id[p["element"]].get("now_cost")} for p in picks],
                 "chips": {k: v.get("status_for_entry") for k, v in my_chips.items()}}
 
     if debug:
