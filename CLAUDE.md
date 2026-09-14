@@ -199,10 +199,10 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
 `/api/entry/179777/history/`.
 
 ### The app is DEPLOYED (Railway, 2026-09-14)
-- API: https://fpl-copycat-app-production.up.railway.app — `/healthz`, `/api/status`,
+- API: https://fpl-dugout.up.railway.app — `/healthz`, `/api/status`,
   `/api/prices/latest`, `/api/prices/players/{id}/history`, `POST /api/admin/import`
   (header `X-Admin-Token`). Railway project `intuitive-acceptance` (Hobby plan), region
-  Singapore; services `fpl-copycat-app` (root dir `/`, Dockerfile, healthcheck
+  Singapore; services `dugout` (renamed from `fpl-copycat-app` 2026-09-14; root dir `/`, Dockerfile, healthcheck
   `/healthz`, restart on failure) + `Postgres` (DATABASE_URL wired as a variable
   reference `${{Postgres.DATABASE_URL}}` — no connection string was ever copied).
 - Hourly import at :20 (`ENABLE_SCHEDULER=1`), plus 20s after boot: price snapshots,
@@ -231,8 +231,8 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
 
 ### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
-title, packages or docs. The Railway service/domain and this executing repo are
-unchanged. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
+title, packages or docs. Railway service renamed `dugout`, domain `fpl-dugout.up.railway.app` (old domain
+removed, 404s). Only this executing repo keeps the copycat name. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
 titles — those names belong to this repo and stay.
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
 snapshots this repo commits and shows countdowns/movers; execution stays here. It
