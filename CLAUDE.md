@@ -42,6 +42,7 @@ owner's machine is off. The cron fires every 15 min but is gated — see
   dry/live runs pinning the exact log lines. Run `python -m pytest -q`; CI runs it on
   every push (`.github/workflows/tests.yml`). `tests/fixtures/reveal_synthetic.html`
   reproduces the reveal page's STRUCTURE (not its content) from a class-tree dump.
+- `data/prices/` — daily price snapshots (see Phase 1a below); committed by the workflow.
 - `state/state.json` — dedup state, committed back by the workflow after each run.
   The persist step **retries and then fails red**; it must never swallow a push
   failure, because losing this file makes a later run report an already-mirrored
@@ -195,6 +196,23 @@ alerts, new **private** repo `fpl-copycat-app` importing `copycat_core`.
 FPL publishes no price history, so every day without a snapshot is price-analytics
 data that can never be recovered. Also needed early: Tom's FPL entry id (for the
 points comparison) — findable via a league he is in or FPL search.
+
+### Phase 1a — daily price snapshots (LIVE from 2026-09-14)
+FPL publishes no price history, so capture started immediately, in this repo, ahead of
+the app's database. `copycat_core/snapshot.py` runs on **every clock tick before the
+run gate**, from the public endpoint (no FPL auth, cannot interfere with mirroring):
+
+| Slot | When (UK) | What it captures | Written |
+|---|---|---|---|
+| `pre` | last 35 min before midnight | the predictive signal — `transfers_in/out_event`, ownership — at its most complete | overwritten within the window; latest wins |
+| `post` | first 75 min after midnight | the realised price change (`now_cost`, `cost_change_event`) | once |
+
+Files: `data/prices/<uk-date>/{pre,post}.json.gz` (slim players + teams + meta; ~30 KB
+each) and `data/prices/latest.json`. `<uk-date>` is the date the prices are in effect.
+The workflow's persist step commits `data/prices` alongside `state/state.json`.
+`workflow_dispatch` input `snapshot_force=1` writes a `manual` slot regardless of the
+window (used for the first end-to-end check). Phase 1's importer loads these files into
+Postgres; nothing is lost by starting here.
 
 ### How automatic mirroring works (the whole point of the project)
 Every gated run, with no human in the loop:

@@ -39,6 +39,9 @@ class Settings:
     state_path: str
     check_pat: bool
     dump_reveal: bool
+    # data/ next to state/: daily price snapshots (see snapshot.py)
+    data_dir: str = ""
+    snapshot_force: bool = False
 
     @property
     def is_clock(self) -> bool:
@@ -71,4 +74,8 @@ class Settings:
                 "state", "state.json"),
             check_pat=_flag(env, "CHECK_PAT"),
             dump_reveal=_flag(env, "DUMP_REVEAL"),
+            data_dir=os.path.join(os.path.dirname(os.path.dirname(
+                state_path or os.path.join(os.path.dirname(os.path.dirname(
+                    os.path.abspath(__file__))), "state", "state.json"))), "data"),
+            snapshot_force=_flag(env, "SNAPSHOT_FORCE"),
         )

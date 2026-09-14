@@ -14,7 +14,7 @@ from typing import Callable, Optional
 
 import requests
 
-from . import execute, fix as fixmod
+from . import execute, fix as fixmod, snapshot
 from .fpl import (TokenManager, fpl_session, get_bootstrap, get_my_gw_transfers,
                   get_my_team, open_gameweek, public_next_deadline)
 from .log import log
@@ -279,6 +279,10 @@ def cli(env=os.environ) -> int:
         return 0 if GitHubVariableTokenStore(settings.gh_repo or "", settings.gh_pat).probe() else 1
     if settings.dump_reveal:
         return 0 if fixmod.dump_reveal_structure(settings.target, settings.fix_cookie or "") else 1
+    # Price snapshot first: public endpoint, no FPL auth, and it must happen on the
+    # clock ticks that the mirror gate is about to skip.
+    snapshot.safe_take_snapshot(deps.now_fn(), settings.data_dir, http=deps.http,
+                                force=settings.snapshot_force)
     if not should_run_now(settings, deadline_fn=deps.deadline_fn):
         return 0
     try:
