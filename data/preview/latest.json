@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-14T09:02:24+00:00",
+ "ts": "2026-09-14T10:00:44+00:00",
  "kind": "preview",
  "event_id": 5,
  "deadline": "2026-09-18T17:30:00Z",
@@ -77,6 +77,128 @@
    "Maguire",
    "O'Shea"
   ],
+  "players": [
+   {
+    "id": 1,
+    "name": "Raya",
+    "position": 1,
+    "purchase_price": 60,
+    "selling_price": 60,
+    "now_cost": 60
+   },
+   {
+    "id": 4,
+    "name": "Gabriel",
+    "position": 2,
+    "purchase_price": 80,
+    "selling_price": 80,
+    "now_cost": 80
+   },
+   {
+    "id": 229,
+    "name": "Tarkowski",
+    "position": 3,
+    "purchase_price": 60,
+    "selling_price": 60,
+    "now_cost": 61
+   },
+   {
+    "id": 469,
+    "name": "N.Williams",
+    "position": 4,
+    "purchase_price": 50,
+    "selling_price": 50,
+    "now_cost": 50
+   },
+   {
+    "id": 12,
+    "name": "Saka",
+    "position": 5,
+    "purchase_price": 95,
+    "selling_price": 95,
+    "now_cost": 95
+   },
+   {
+    "id": 154,
+    "name": "Palmer",
+    "position": 6,
+    "purchase_price": 95,
+    "selling_price": 96,
+    "now_cost": 97
+   },
+   {
+    "id": 40,
+    "name": "Rogers",
+    "position": 7,
+    "purchase_price": 76,
+    "selling_price": 76,
+    "now_cost": 77
+   },
+   {
+    "id": 427,
+    "name": "Mbeumo",
+    "position": 8,
+    "purchase_price": 79,
+    "selling_price": 79,
+    "now_cost": 79
+   },
+   {
+    "id": 368,
+    "name": "Szoboszlai",
+    "position": 9,
+    "purchase_price": 70,
+    "selling_price": 70,
+    "now_cost": 70
+   },
+   {
+    "id": 346,
+    "name": "Calvert-Lewin",
+    "position": 10,
+    "purchase_price": 60,
+    "selling_price": 60,
+    "now_cost": 60
+   },
+   {
+    "id": 165,
+    "name": "João Pedro",
+    "position": 11,
+    "purchase_price": 75,
+    "selling_price": 76,
+    "now_cost": 78
+   },
+   {
+    "id": 564,
+    "name": "Scherpen",
+    "position": 12,
+    "purchase_price": 45,
+    "selling_price": 45,
+    "now_cost": 45
+   },
+   {
+    "id": 295,
+    "name": "McBurnie",
+    "position": 13,
+    "purchase_price": 55,
+    "selling_price": 55,
+    "now_cost": 55
+   },
+   {
+    "id": 418,
+    "name": "Maguire",
+    "position": 14,
+    "purchase_price": 50,
+    "selling_price": 49,
+    "now_cost": 49
+   },
+   {
+    "id": 304,
+    "name": "O'Shea",
+    "position": 15,
+    "purchase_price": 40,
+    "selling_price": 40,
+    "now_cost": 40
+   }
+  ],
   "chips": {
    "bboost": "available",
    "3xc": "played",
@@ -99,7 +221,7 @@
  "result": "dry",
  "early_exit": "",
  "log": [
-  "[gate] 104.5h to the GW deadline, outside the 6h window; 838min to the price change, outside 150min. Skipping.",
+  "[gate] 103.5h to the GW deadline, outside the 6h window; 779min to the price change, outside 150min. Skipping.",
   "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 12, 2026, 11:23 a.m.",
   "[plan] already matching",
