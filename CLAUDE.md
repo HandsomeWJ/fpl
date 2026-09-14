@@ -232,7 +232,11 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
 ### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
 title, packages or docs. Railway service renamed `dugout`, domain `fpl-dugout.up.railway.app` (old domain
-removed, 404s). Only this executing repo keeps the copycat name. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
+removed, 404s). Only this executing repo keeps the copycat name.
+Leftovers after the rename: Railway's Source panel showed "GitHub Repo not found" for the
+branch (webhook deploys still worked - Railway matches by repo id); re-selecting the repo
+triggers a GitHub sudo-mode/app-installation flow the owner must approve. Private hostname
+`fpl-copycat-app.railway.internal` (unused) and project name `intuitive-acceptance` untouched. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
 titles — those names belong to this repo and stay.
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
 snapshots this repo commits and shows countdowns/movers; execution stays here. It
