@@ -194,8 +194,9 @@ run side-by-side for a full gameweek), FastAPI + Postgres + React/Vite, Telegram
 alerts, new **private** repo `fpl-copycat-app` importing `copycat_core`.
 **Do first, before any UI:** a daily `bootstrap-static` snapshot into Postgres.
 FPL publishes no price history, so every day without a snapshot is price-analytics
-data that can never be recovered. Also needed early: Tom's FPL entry id (for the
-points comparison) — findable via a league he is in or FPL search.
+data that can never be recovered. **Tom's FPL entry id: 179777** (verified 2026-09-14 via `/api/entry/179777/`: Tom
+Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public history:
+`/api/entry/179777/history/`.
 
 ### The app is DEPLOYED (Railway, 2026-09-14)
 - API: https://fpl-copycat-app-production.up.railway.app — `/healthz`, `/api/status`,
