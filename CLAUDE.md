@@ -208,8 +208,8 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
 - Hourly import at :20 (`ENABLE_SCHEDULER=1`), plus 20s after boot: price snapshots,
   `data/ledger/*.json`, and an upserting backfill of the workflow's GitHub issues (the
   ledger's history before 2026-09-14). `/api/preview` serves `data/preview/latest.json`;
-  `/api/ledger` the history. Issues opened by dry runs (before that bug was fixed) show
-  as "dry run" in the ledger.
+  `/api/ledger` the history. Issue-derived history before 2026-09-14 is approximate — issue bodies were built before
+  the `dry_run=` line was logged, so dry-run-opened issues look like live ones.
 - Railway's config-as-code is deprecated for new services, so `api/railway.toml` is
   inert; build/healthcheck/restart live in the service Settings UI.
 - Railway's "Agent" chat is billable and is triggered by pressing Enter in the
