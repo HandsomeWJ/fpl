@@ -202,7 +202,7 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
 - API: https://fpl-copycat-app-production.up.railway.app — `/healthz`, `/api/status`,
   `/api/prices/latest`, `/api/prices/players/{id}/history`, `POST /api/admin/import`
   (header `X-Admin-Token`). Railway project `intuitive-acceptance` (Hobby plan), region
-  Singapore; services `fpl-copycat-app` (root dir `/api`, Dockerfile, healthcheck
+  Singapore; services `fpl-copycat-app` (root dir `/`, Dockerfile, healthcheck
   `/healthz`, restart on failure) + `Postgres` (DATABASE_URL wired as a variable
   reference `${{Postgres.DATABASE_URL}}` — no connection string was ever copied).
 - Hourly import at :20 (`ENABLE_SCHEDULER=1`); first import verified: 658 rows.
@@ -210,7 +210,9 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
   inert; build/healthcheck/restart live in the service Settings UI.
 - Railway's "Agent" chat is billable and is triggered by pressing Enter in the
   new-project box — use ArrowDown+Enter to pick a repo suggestion instead.
-- Web UI is not deployed yet (API only); run `web/` locally with `npm run dev`.
+- Control-room UI is served from the same container at the root URL (root `Dockerfile`
+  builds `web/`, FastAPI `StaticFiles` mounted after the API routes). Service root
+  directory is `/`.
 
 ### The app repo: `HandsomeWJ/fpl-copycat-app` (private, created 2026-09-14)
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
