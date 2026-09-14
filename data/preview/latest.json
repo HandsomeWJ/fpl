@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-14T20:30:32+00:00",
+ "ts": "2026-09-14T20:45:25+00:00",
  "kind": "run",
  "event_id": 5,
  "deadline": "2026-09-18T17:30:00Z",
@@ -73,8 +73,8 @@
    "Calvert-Lewin",
    "João Pedro",
    "Scherpen",
-   "McBurnie",
    "Maguire",
+   "McBurnie",
    "O'Shea"
   ],
   "players": [
@@ -175,20 +175,20 @@
     "now_cost": 45
    },
    {
-    "id": 295,
-    "name": "McBurnie",
-    "position": 13,
-    "purchase_price": 55,
-    "selling_price": 55,
-    "now_cost": 55
-   },
-   {
     "id": 418,
     "name": "Maguire",
-    "position": 14,
+    "position": 13,
     "purchase_price": 50,
     "selling_price": 49,
     "now_cost": 49
+   },
+   {
+    "id": 295,
+    "name": "McBurnie",
+    "position": 14,
+    "purchase_price": 55,
+    "selling_price": 55,
+    "now_cost": 55
    },
    {
     "id": 304,
@@ -217,13 +217,13 @@
  "chips_activated": [],
  "transfer_chip": null,
  "chip_held": null,
- "lineup": "XI/bench reordered, captain Palmer, vice Saka",
+ "lineup": "lineup already matches",
  "result": "nothing",
  "early_exit": "",
  "log": [
-  "[gate] 149min to the price change; running.",
+  "[gate] 135min to the price change; running.",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 14, 2026, 4:33 p.m.",
   "[plan] already matching",
-  "[lineup] XI/bench reordered, captain Palmer, vice Saka"
+  "[lineup] lineup already matches"
  ]
 }
