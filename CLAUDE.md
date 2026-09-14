@@ -236,6 +236,9 @@ profit, player detail page, differentials, effective ownership, injury watch** (
 Control room · Transfers · Squad · Players · Fixtures). Off the table: price-change
 prediction and cost-of-copying (owner decisions, 2026-09-14). Still proposed: live GW scoreboard,
 deadline briefing card, mini-league dashboard.
+Player and team profile drawers open from any name/club code anywhere in the app
+(2026-09-14). FPL's team `played/win/draw/loss/points/form` fields are all 0 in the
+2026/27 bootstrap - the table is computed from finished fixtures instead.
 **Chips reset mid-season** (owner flagged it): bootstrap `chips` has each chip once per
 window with start/stop events (2026/27: GW1|2-19, GW20-38); `planning.chip_state`
 groups by stop_event, marks unused chips expired after the window, and the planner only
