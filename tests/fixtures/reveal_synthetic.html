@@ -1,0 +1,102 @@
+<!-- Synthetic reproduction of the fantasyfootballfix.com reveal page STRUCTURE, built from
+     a class-tree dump (DUMP_REVEAL=1) on 2026-09-04. Not a copy of the page. The names are
+     public FPL players; the squad is the GW3 target the tests plan against.
+     Structure that matters:
+       .reveal-section per manager
+       .rchip / .rchip__chip / .rchip__status            chips
+       .rtransfers "Gameweek N" + li.rtransfers__transfer  chronological transfer LOG
+       .flip-card-front .fffPitch / .fffBench            the manager's real 15 (front face)
+       .flip-card-back--consensus .fffPitch             comparison pitches - must be IGNORED
+       title="Captain" / title="Vice-captain"          armbands are title attributes -->
+<div class="reveal-section">
+  <div class="flip-card-inner">
+    <div class="white-box flip-card-front">
+      <div class="rmanager-bio">
+        <div class="rmanager-bio__header"><h3>Tom Dollimore</h3></div>
+        <p class="rmanager-bio__updated">Last Updated: Aug. 30, 2026, 8:05 p.m. FPL rank 1,234</p>
+        <div class="rmanager-bio__activity">
+          <div class="fffPitch">
+            <div class="fffPitchRow">
+              <div class="fffPitchElement"><div class="fffPlayerContainer"><div class="fffShirtContainer"><img class="fffShirt" alt=""></div></div><div class="fffElementDetail"><div class="fffElementText">Raya</div></div></div>
+            </div>
+            <div class="fffPitchRow">
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Gabriel</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Gvardiol</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Tarkowski</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">N.Williams</div></div></div>
+            </div>
+            <div class="fffPitchRow">
+              <div class="fffPitchElement"><div class="fffElementDetail"><span class="fa fa-star" title="Captain"></span><div class="fffElementText">B.Fernandes</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Ndiaye</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Elanga</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Szoboszlai</div></div></div>
+            </div>
+            <div class="fffPitchRow">
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">McBurnie</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><span class="fa fa-star" title="Vice-captain"></span><div class="fffElementText">Wissa</div></div></div>
+            </div>
+            <div class="fffBench">
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Scherpen</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Palmer</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">João Pedro</div></div></div>
+              <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">O'Shea</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rmanager-gw">
+        <div class="rtransfers">
+          <h4>Gameweek 3 Transfers</h4>
+          <ul class="rtransfers__ul">
+            <li class="rtransfers__transfer">
+              <div class="rtransfers__player"><span class="rtransfers__status">Out</span> Calvert-Lewin</div>
+              <div class="rtransfers__player"><span class="rtransfers__status">In</span> Wissa</div>
+            </li>
+            <li class="rtransfers__transfer">
+              <div class="rtransfers__player"><span class="rtransfers__status">Out</span> Maguire</div>
+              <div class="rtransfers__player"><span class="rtransfers__status">In</span> Gvardiol</div>
+            </li>
+            <li class="rtransfers__transfer">
+              <div class="rtransfers__player"><span class="rtransfers__status">Out</span> Mbeumo</div>
+              <div class="rtransfers__player"><span class="rtransfers__status">In</span> Elanga</div>
+            </li>
+          </ul>
+        </div>
+        <div class="rteam-info">
+          <div class="rchips">
+            <div class="rchip rchip--available"><span class="rchip__chip">WC1</span><span class="rchip__status">Available</span></div>
+            <div class="rchip rchip--available"><span class="rchip__chip">WC2</span><span class="rchip__status">Available</span></div>
+            <div class="rchip rchip--available"><span class="rchip__chip">TC</span><span class="rchip__status">Available</span></div>
+            <div class="rchip rchip--active"><span class="rchip__chip">FH</span><span class="rchip__status">Active</span></div>
+            <div class="rchip rchip--used"><span class="rchip__chip">BB</span><span class="rchip__status">GW 1</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="white-box rmanager flip-card-back flip-card-back--consensus">
+      <div class="rmanager-bio--compare">
+        <div class="fffPitch">
+          <div class="fffPitchRow">
+            <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Kelleher</div></div></div>
+            <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Saka</div></div></div>
+          </div>
+          <div class="fffBench">
+            <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Calvert-Lewin</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="reveal-section">
+  <div class="flip-card-inner">
+    <div class="white-box flip-card-front">
+      <div class="rmanager-bio"><div class="rmanager-bio__header"><h3>Other Manager</h3></div>
+        <div class="fffPitch"><div class="fffPitchRow">
+          <div class="fffPitchElement"><div class="fffElementDetail"><div class="fffElementText">Kelleher</div></div></div>
+        </div></div>
+      </div>
+      <div class="rtransfers"><h4>Gameweek 3 Transfers</h4><ul class="rtransfers__ul"></ul></div>
+    </div>
+  </div>
+</div>
