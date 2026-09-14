@@ -230,14 +230,18 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
   current price, -4 beyond free transfers (free count from the preview record).
 
 ### Dugout analytics backlog (proposed 2026-09-14, not yet chosen by the owner)
-Built: xPts model, transfer recommender, captain picks, player explorer, fixture ticker,
-you-vs-Tom. Off the table: price-change prediction (owner decision). Proposed, in
-suggested order: cost of copying (score mirrored transfers with xPts + actuals, hits,
-reveal-to-execution lag) -> chip planner (BB/TC fixture swings, FH gain over current
-squad) -> bench/formation optimiser vs what the run set -> team value + sell-on profit
--> player detail page (history, xG over/under, ownership, price from snapshots) ->
-differentials / effective ownership -> injury & rotation watch -> live GW scoreboard
-(public live endpoint) -> deadline briefing card -> mini-league dashboard.
+Built (2026-09-14): xPts model, transfer recommender, captain picks, player explorer,
+fixture ticker, you-vs-Tom, **chip planner, best-XI optimiser, team value + sell-on
+profit, player detail page, differentials, effective ownership, injury watch** (tabs:
+Control room · Transfers · Squad · Players · Fixtures). Off the table: price-change
+prediction (owner decision). Still proposed: cost of copying, live GW scoreboard,
+deadline briefing card, mini-league dashboard.
+**Chips reset mid-season** (owner flagged it): bootstrap `chips` has each chip once per
+window with start/stop events (2026/27: GW1|2-19, GW20-38); `planning.chip_state`
+groups by stop_event, marks unused chips expired after the window, and the planner only
+values chips inside the live window. `rec.team.players` (purchase/selling/now prices)
+was added to the preview record for the value tracker (workflow runs from main; no
+core tag bump needed for data-only changes).
 
 ### The app repo: `HandsomeWJ/fpl-dugout` (was `fpl-copycat-app` until 2026-09-14; local folder `~/Documents/fpl-dugout`) (private, created 2026-09-14) — the app is named **Dugout**
 Renamed 2026-09-14 at the owner's request: no "copycat" anywhere in the web app's UI, API
