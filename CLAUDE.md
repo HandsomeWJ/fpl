@@ -201,7 +201,7 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
 ### The app is DEPLOYED (Railway, 2026-09-14)
 - API: https://fpl-dugout.up.railway.app — `/healthz`, `/api/status`,
   `/api/prices/latest`, `/api/prices/players/{id}/history`, `POST /api/admin/import`
-  (header `X-Admin-Token`). Railway project `intuitive-acceptance` (Hobby plan), region
+  (header `X-Admin-Token`). Railway project `dugout` (renamed from `intuitive-acceptance` 2026-09-14; Hobby plan), region
   Singapore; services `dugout` (renamed from `fpl-copycat-app` 2026-09-14; root dir `/`, Dockerfile, healthcheck
   `/healthz`, restart on failure) + `Postgres` (DATABASE_URL wired as a variable
   reference `${{Postgres.DATABASE_URL}}` — no connection string was ever copied).
@@ -237,7 +237,7 @@ Leftovers after the rename: Railway's Source panel showed "GitHub Repo not found
 branch (webhook deploys still worked - Railway matches by repo id); re-selecting the repo
 triggers a GitHub sudo-mode/app-installation flow the owner must approve (done 2026-09-14;
 auto-deploy from `fpl-dugout` verified with an empty commit; the red banner is cosmetic). Private hostname
-`fpl-copycat-app.railway.internal` (unused) and project name `intuitive-acceptance` untouched. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
+`fpl-copycat-app.railway.internal` (unused) and project renamed `dugout` too. The app still consumes `copycat-core` and parses this repo's "FPL Copycat" issue
 titles — those names belong to this repo and stay.
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
 snapshots this repo commits and shows countdowns/movers; execution stays here. It
