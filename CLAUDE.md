@@ -197,6 +197,20 @@ FPL publishes no price history, so every day without a snapshot is price-analyti
 data that can never be recovered. Also needed early: Tom's FPL entry id (for the
 points comparison) — findable via a league he is in or FPL search.
 
+### The app is DEPLOYED (Railway, 2026-09-14)
+- API: https://fpl-copycat-app-production.up.railway.app — `/healthz`, `/api/status`,
+  `/api/prices/latest`, `/api/prices/players/{id}/history`, `POST /api/admin/import`
+  (header `X-Admin-Token`). Railway project `intuitive-acceptance` (Hobby plan), region
+  Singapore; services `fpl-copycat-app` (root dir `/api`, Dockerfile, healthcheck
+  `/healthz`, restart on failure) + `Postgres` (DATABASE_URL wired as a variable
+  reference `${{Postgres.DATABASE_URL}}` — no connection string was ever copied).
+- Hourly import at :20 (`ENABLE_SCHEDULER=1`); first import verified: 658 rows.
+- Railway's config-as-code is deprecated for new services, so `api/railway.toml` is
+  inert; build/healthcheck/restart live in the service Settings UI.
+- Railway's "Agent" chat is billable and is triggered by pressing Enter in the
+  new-project box — use ArrowDown+Enter to pick a repo suggestion instead.
+- Web UI is not deployed yet (API only); run `web/` locally with `npm run dev`.
+
 ### The app repo: `HandsomeWJ/fpl-copycat-app` (private, created 2026-09-14)
 FastAPI + Postgres + React control room. **Read-only in Phase 1** — it imports the price
 snapshots this repo commits and shows countdowns/movers; execution stays here. It
