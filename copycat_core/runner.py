@@ -14,13 +14,15 @@ from typing import Callable, Optional
 
 import requests
 
-from . import execute, fix as fixmod, snapshot
+import dataclasses
+
+from . import execute, fix as fixmod, record, snapshot
 from .fpl import (TokenManager, fpl_session, get_bootstrap, get_my_gw_transfers,
                   get_my_team, open_gameweek, public_next_deadline)
 from .log import log
 from .plan import (CHIP_MAP, TRANSFER_CHIPS, apply_hit_policy, build_player_index,
                    decide_transfer_chip, net_out_transfer_log, plan_net_transfers,
-                   plan_transfers, resolve_target_squad)
+                   plan_transfers, resolve_target_squad, squad_converges)
 from .ports import (GitHubIssueNotifier, GitHubVariableTokenStore, JsonFileState,
                     LogNotifier, Notifier, NullTokenStore, StateStore, TokenStore)
 from .schedule import should_run_now
@@ -64,9 +66,15 @@ class SubmitFailed(Exception):
     """Transfers were rejected and the squad does not show them."""
 
 
-def _finish(deps: Deps, state: dict, dry: bool, changed: bool) -> None:
+def _finish(deps: Deps, state: dict, dry: bool, changed: bool,
+            rec: Optional["record.RunRecord"] = None, settings: Optional[Settings] = None) -> None:
     if not dry:
         deps.state.save(state)
+    # Records are written before the final "Done." line so that line stays the
+    # end-of-run marker the owner reads in Actions.
+    if rec is not None and settings is not None and settings.data_dir:
+        from .log import report_lines
+        record.safe_write_records(rec, settings.data_dir, report_lines)
     log(f"Done. changed={changed} dry_run={dry}")
 
 
@@ -75,6 +83,8 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
         raise RuntimeError("FPL_ENTRY is not set.")
     entry, target, dry, debug = settings.entry, settings.target, settings.dry, settings.debug
     out = RunOutcome()
+    rec = record.RunRecord(ts=deps.now_fn().isoformat(timespec="seconds"),
+                           kind="preview" if dry else "run", dry=dry, entry=entry, target=target)
 
     state = deps.state.load()
     fetch_fix = deps.fetch_fix or (lambda name: fixmod.fetch_fix_manager(
@@ -82,6 +92,8 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
     fix = fetch_fix(target)
     log(f"Fix reveal for {target}: chips={fix['chips']}, transfers={fix['transfers']}, "
         f"last updated: {fix['updated']}")
+    rec.fix = {k: fix.get(k) for k in ("updated", "gw", "chips", "transfers", "squad",
+                                       "starters", "bench", "captain", "vice")}
 
     tm = TokenManager(deps.tokens, settings.fpl_refresh_seed, deps.notifier, http=deps.http)
     s = deps.session_factory(tm.access_token(), settings.fpl_cookie)
@@ -93,15 +105,18 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
         raise RuntimeError("Could not determine the upcoming gameweek.")
     event_id = current["id"]
     deadline = datetime.fromisoformat(current["deadline_time"].replace("Z", "+00:00"))
+    rec.event_id, rec.deadline = event_id, current["deadline_time"]
     if deps.now_fn() > deadline:
         log(f"GW{event_id} deadline has passed; nothing to do until next GW opens.")
-        _finish(deps, state, dry, changed=False)
+        rec.result, rec.early_exit = "early-exit", "deadline passed"
+        _finish(deps, state, dry, changed=False, rec=rec, settings=settings)
         return out
 
     if fix["gw"] is not None and fix["gw"] != event_id:
         log(f"Fix reveal shows GW{fix['gw']} transfers but the open FPL gameweek is "
             f"GW{event_id}; waiting for the reveal page to roll over.")
-        _finish(deps, state, dry, changed=False)
+        rec.result, rec.early_exit = "early-exit", "reveal page not rolled over"
+        _finish(deps, state, dry, changed=False, rec=rec, settings=settings)
         return out
 
     team = get_my_team(s, entry)
@@ -114,6 +129,9 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
     squad_ids = {p["element"] for p in picks}
     elements_by_id = {e["id"]: e for e in bootstrap["elements"]}
     idx = build_player_index(bootstrap)
+    rec.team = {"bank": bank, "free_transfers": free_transfers, "made": made,
+                "squad": [elements_by_id[p["element"]]["web_name"] for p in picks],
+                "chips": {k: v.get("status_for_entry") for k, v in my_chips.items()}}
 
     if debug:
         log(f"[debug] event_id={event_id} fix_gw={fix['gw']} bank={bank} "
@@ -166,6 +184,7 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
             if not dry and not execute.activate_team_chip(s, entry, chip_name, picks):
                 continue
             team_chip = chip_name
+            rec.chips_activated.append(chip_name)
             if chip_key not in state["chips_done"]:
                 state["chips_done"].append(chip_key)
             changed = True
@@ -202,28 +221,44 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
                           squad_ids=squad_ids, sell_price=sell_price, bank=bank,
                           club_counts=club_counts, already_in=already_in, debug=debug)
     to_apply, skipped = plan.to_apply, plan.skipped
+    rec.plan_note, rec.pairs = net_note, list(pending) if net_pairs is not None else list(pending)
 
     # ---------- 2b) play a whole-squad chip only if it actually buys the squad
+    wanted_chip = active_chip
     active_chip = decide_transfer_chip(active_chip, target_squad, plan.projected_ids, idx,
                                        bootstrap, elements_by_id,
                                        allow_override=settings.allow_transfer_chip,
                                        event_id=event_id, notifier=deps.notifier)
+    rec.transfer_chip = active_chip
+    if wanted_chip in TRANSFER_CHIPS and active_chip is None:
+        rec.chip_held = {"chip": wanted_chip,
+                         "why": squad_converges(target_squad, plan.projected_ids, idx,
+                                                bootstrap, elements_by_id)[1]}
 
     to_apply = apply_hit_policy(to_apply, skipped, unlimited=unlimited,
                                 active_chip=active_chip, free_transfers=free_transfers,
                                 made=made, allow_hits=settings.allow_hits)
+
+    rec.to_apply = [{"out": p_out["web_name"], "in": p_in["web_name"], "out_id": p_out["id"],
+                     "in_id": p_in["id"], "sell": sell, "cost": cost}
+                    for _, p_out, p_in, sell, cost, _ in to_apply]
+    if not unlimited and active_chip not in TRANSFER_CHIPS:
+        extra = max(len(to_apply) - max((free_transfers or 0) - made, 0), 0)
+        rec.hits = {"count": extra, "points": -4 * extra}
 
     # ---------- 3) submit
     if to_apply:
         ok = execute.submit_transfers(s, entry, event_id, to_apply, active_chip,
                                       dry=dry, debug=debug)
         if not ok:
+            rec.result = "failed"
             deps.notifier.notify(f"FPL Copycat: transfer submission FAILED (GW{event_id})")
-            _finish(deps, state, dry, changed)
+            _finish(deps, state, dry, changed, rec=rec, settings=settings)
             raise SubmitFailed()
         for _, _, _, _, _, key in to_apply:
             state["processed"].append(key)
         changed = True
+        rec.result = "dry" if dry else "applied"
 
     # ---------- 3b) match their XI, bench order and armbands
     # Re-read the squad: transfers just changed it, and the lineup must be built from
@@ -238,9 +273,11 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
         lineup_changed, lineup_note = execute.sync_lineup(
             s, entry, fresh, fix, idx, bootstrap, elements_by_id, dry, chip=team_chip)
         log(f"[lineup] {lineup_note}")
+        rec.lineup = lineup_note
         changed = changed or lineup_changed
 
     # ---------- 4) report skips (once per skip)
+    rec.skipped = [{"out": tr["out"], "in": tr["in"], "reason": reason} for tr, reason in skipped]
     for tr, reason in skipped:
         # print, not log(): the issue body already lists these via new_skips
         print(f"SKIP {tr['out']} -> {tr['in']}: {reason}", flush=True)
@@ -263,7 +300,9 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
             deps.notifier.notify(title, body)
 
     out.changed = changed or bool(new_skips)
-    _finish(deps, state, dry, out.changed)
+    if rec.result == "nothing" and dry:
+        rec.result = "dry"
+    _finish(deps, state, dry, out.changed, rec=rec, settings=settings)
     return out
 
 
@@ -284,6 +323,15 @@ def cli(env=os.environ) -> int:
     snapshot.safe_take_snapshot(deps.now_fn(), settings.data_dir, http=deps.http,
                                 force=settings.snapshot_force)
     if not should_run_now(settings, deadline_fn=deps.deadline_fn):
+        # Once an hour (the first tick after :00), compute the plan as a DRY run so the
+        # app's "next run will..." preview is never more than an hour stale. Costs one
+        # reveal-page fetch and one FPL read per hour; nothing is submitted.
+        if settings.preview_hourly and deps.now_fn().minute < 15:
+            log("[preview] hourly dry run for the app's preview")
+            try:
+                run(dataclasses.replace(settings, dry=True), deps)
+            except Exception as e:
+                log(f"[preview] failed: {e}")
         return 0
     try:
         outcome = run(settings, deps)

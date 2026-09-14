@@ -22,8 +22,16 @@ def _deps(session, html, tokens=TOKENS):
                 now_fn=lambda: datetime(2026, 9, 1, 4, 0, tzinfo=timezone.utc))
 
 
+import os
+import tempfile
+
+TMP = tempfile.mkdtemp(prefix="copycat-test-")
+
+
 def _settings(**env):
-    return Settings.from_env({"FPL_ENTRY": "7953181", **env})
+    # state/data under a temp dir so tests never write into the repo's data/
+    return Settings.from_env({"FPL_ENTRY": "7953181", **env},
+                             state_path=os.path.join(TMP, "state", "state.json"))
 
 
 def test_dry_run_plans_gw3_exactly(reveal_html):
@@ -149,3 +157,36 @@ def test_token_rotation_persist_failure_is_escalated(reveal_html):
     out = run(_settings(), deps)
     assert out.persist_failed is True
     assert deps.notifier.sent[0][0] == "FPL Copycat: token rotation could not be saved"
+
+
+def test_live_run_writes_preview_and_ledger_records(reveal_html):
+    import glob, json as _json
+    s = FakeSession(mk_bootstrap(), mk_picks(OUR_SQUAD), bank=0, free=2, made=5, confirm_status=400)
+    settings = _settings()
+    for f in glob.glob(os.path.join(settings.data_dir, "ledger", "*.json")):
+        os.remove(f)
+    run(settings, _deps(s, reveal_html))
+    prev = _json.load(open(os.path.join(settings.data_dir, "preview", "latest.json")))
+    assert prev["kind"] == "run" and prev["result"] == "applied" and prev["event_id"] == 3
+    assert {t["out"] for t in prev["to_apply"]} == {"Mbeumo", "Calvert-Lewin", "Maguire"}
+    assert prev["transfer_chip"] == "freehit" and prev["hits"] == {"count": 0, "points": 0}
+    assert prev["fix"]["captain"] == "B.Fernandes" and len(prev["team"]["squad"]) == 15
+    assert any(l.startswith("Submitting 3 transfer(s)") for l in prev["log"])
+    ledgers = glob.glob(os.path.join(settings.data_dir, "ledger", "*_gw3.json"))
+    assert len(ledgers) == 1
+    assert "[record] ledger  -> " in " ".join(logmod.report_lines)
+
+
+def test_dry_run_writes_preview_only(reveal_html):
+    import glob, json as _json
+    s = FakeSession(mk_bootstrap(), mk_picks(TOM_SQUAD, captain="B.Fernandes", vice="Wissa"),
+                    chips={"freehit": "active", "wildcard": "unavailable",
+                           "bboost": "unavailable", "3xc": "unavailable"})
+    settings = _settings(DRY_RUN="1")
+    for f in glob.glob(os.path.join(settings.data_dir, "ledger", "*.json")):
+        os.remove(f)
+    run(settings, _deps(s, reveal_html))
+    prev = _json.load(open(os.path.join(settings.data_dir, "preview", "latest.json")))
+    assert prev["kind"] == "preview" and prev["result"] == "dry" and prev["to_apply"] == []
+    assert prev["plan_note"] == "already matching"
+    assert glob.glob(os.path.join(settings.data_dir, "ledger", "*.json")) == []

@@ -42,6 +42,9 @@ class Settings:
     # data/ next to state/: daily price snapshots (see snapshot.py)
     data_dir: str = ""
     snapshot_force: bool = False
+    # When a clock tick is gated out, still compute a dry-run plan once an hour so the
+    # app's preview stays fresh. PREVIEW_HOURLY=0 turns it off.
+    preview_hourly: bool = True
 
     @property
     def is_clock(self) -> bool:
@@ -78,4 +81,5 @@ class Settings:
                 state_path or os.path.join(os.path.dirname(os.path.dirname(
                     os.path.abspath(__file__))), "state", "state.json"))), "data"),
             snapshot_force=_flag(env, "SNAPSHOT_FORCE"),
+            preview_hourly=env.get("PREVIEW_HOURLY", "1") != "0",
         )
