@@ -214,6 +214,9 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
   inert; build/healthcheck/restart live in the service Settings UI.
 - Railway's "Agent" chat is billable and is triggered by pressing Enter in the
   new-project box — use ArrowDown+Enter to pick a repo suggestion instead.
+- `/api/compare`: you vs Tom (entry 179777) per gameweek from the public history endpoint.
+  NOTE: FPL's per-GW `points` is GROSS; hits (`event_transfers_cost`) are only deducted in
+  `total_points`. GW4 on the test account: 81 gross, -28 hits (the -24 catch-up + -4).
 - Control-room UI is served from the same container at the root URL (root `Dockerfile`
   builds `web/`, FastAPI `StaticFiles` mounted after the API routes). Service root
   directory is `/`.
