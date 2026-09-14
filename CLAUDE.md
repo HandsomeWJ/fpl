@@ -205,7 +205,11 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
   Singapore; services `fpl-copycat-app` (root dir `/`, Dockerfile, healthcheck
   `/healthz`, restart on failure) + `Postgres` (DATABASE_URL wired as a variable
   reference `${{Postgres.DATABASE_URL}}` — no connection string was ever copied).
-- Hourly import at :20 (`ENABLE_SCHEDULER=1`); first import verified: 658 rows.
+- Hourly import at :20 (`ENABLE_SCHEDULER=1`), plus 20s after boot: price snapshots,
+  `data/ledger/*.json`, and an upserting backfill of the workflow's GitHub issues (the
+  ledger's history before 2026-09-14). `/api/preview` serves `data/preview/latest.json`;
+  `/api/ledger` the history. Issues opened by dry runs (before that bug was fixed) show
+  as "dry run" in the ledger.
 - Railway's config-as-code is deprecated for new services, so `api/railway.toml` is
   inert; build/healthcheck/restart live in the service Settings UI.
 - Railway's "Agent" chat is billable and is triggered by pressing Enter in the
@@ -221,6 +225,16 @@ installs the logic as `copycat-core` from this repo at a pinned tag
 (`core-v0.1.0`; `pyproject.toml` here makes `copycat_core` pip-installable). To ship a
 core change to the app: tag here (`core-vX.Y.Z`), bump the pin in
 `fpl-copycat-app/api/pyproject.toml`. The core moves into the app repo at Phase 2.
+
+### Run records for the app (LIVE from 2026-09-14) — `copycat_core/record.py`
+Every run writes `data/preview/latest.json` (the plan it computed: fix reveal, live team,
+net pairs, transfers with prices, hit cost, chip decision, lineup note, skips, result,
+full log); live runs that did or attempted something also write
+`data/ledger/<ts>_gw<N>.json`. Both committed by the persist step. When a clock tick is
+gated out, the **first tick after :00 still runs a forced DRY run** so the app's
+"next run will…" preview is never more than ~1h stale (`PREVIEW_HOURLY=0` disables;
+costs one Fix fetch + one FPL read per hour). Records are written *before* the final
+`Done.` line so that line stays the end-of-run marker.
 
 ### Phase 1a — daily price snapshots (LIVE from 2026-09-14)
 FPL publishes no price history, so capture started immediately, in this repo, ahead of
