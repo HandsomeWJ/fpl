@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-14T23:00:41+00:00",
+ "ts": "2026-09-15T00:00:43+00:00",
  "kind": "preview",
  "event_id": 5,
  "deadline": "2026-09-18T17:30:00Z",
@@ -221,10 +221,11 @@
  "result": "dry",
  "early_exit": "",
  "log": [
-  "[snapshot] wrote data/prices/2026-09-15/post.json.gz (659 players, post for 2026-09-15)",
-  "[gate] 90.5h to the GW deadline, outside the 6h window; 1439min to the price change, outside 150min. Skipping.",
+  "[snapshot] post snapshot for 2026-09-15 already captured; skipping.",
+  "[gate] 89.5h to the GW deadline, outside the 6h window; 1379min to the price change, outside 150min. Skipping.",
   "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 14, 2026, 4:33 p.m.",
+  "[tokens] refreshed FPL access token.",
   "[plan] already matching",
   "[lineup] lineup already matches"
  ]
