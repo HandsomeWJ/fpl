@@ -1,9 +1,9 @@
 {
- "ts": "2026-09-15T20:11:47+00:00",
- "kind": "preview",
+ "ts": "2026-09-15T20:30:36+00:00",
+ "kind": "run",
  "event_id": 5,
  "deadline": "2026-09-18T17:30:00Z",
- "dry": true,
+ "dry": false,
  "entry": 7953181,
  "target": "Tom Dollimore",
  "fix": {
@@ -218,11 +218,10 @@
  "transfer_chip": null,
  "chip_held": null,
  "lineup": "lineup already matches",
- "result": "dry",
+ "result": "nothing",
  "early_exit": "",
  "log": [
-  "[gate] 69.3h to the GW deadline, outside the 6h window; 168min to the price change, outside 150min. Skipping.",
-  "[preview] hourly dry run for the app's preview",
+  "[gate] 149min to the price change; running.",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 15, 2026, 12:48 p.m.",
   "[plan] already matching",
   "[lineup] lineup already matches"
