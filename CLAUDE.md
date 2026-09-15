@@ -212,6 +212,12 @@ Dollimore, team "@FPL_Barbossa", GW3 picks = the FH squad we mirrored). Public h
   the `dry_run=` line was logged, so dry-run-opened issues look like live ones.
 - Railway's config-as-code is deprecated for new services, so `api/railway.toml` is
   inert; build/healthcheck/restart live in the service Settings UI.
+- Second Railway project `powerful-education` held one service `worker` from the old repo
+  `HandsomeWJ/fpl_telegram_bot` (Python, last deployed ~Nov 2025), still Online and
+  burning Hobby resources until 2026-09-15, when it was stopped (deployment removed) and
+  its auto-deploy disabled at the owner's request. Service, variables and repo link are
+  intact - Redeploy from the Deployments tab brings it back. That repo may be worth
+  reusing for Phase 2's Telegram alerts.
 - Railway's "Agent" chat is billable and is triggered by pressing Enter in the
   new-project box — use ArrowDown+Enter to pick a repo suggestion instead.
 - `/api/compare`: you vs Tom (entry 179777) per gameweek from the public history endpoint.
