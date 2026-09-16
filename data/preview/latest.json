@@ -1,9 +1,9 @@
 {
- "ts": "2026-09-16T22:45:23+00:00",
- "kind": "run",
+ "ts": "2026-09-16T23:00:42+00:00",
+ "kind": "preview",
  "event_id": 5,
  "deadline": "2026-09-18T17:30:00Z",
- "dry": false,
+ "dry": true,
  "entry": 7953181,
  "target": "Tom Dollimore",
  "fix": {
@@ -234,12 +234,14 @@
  "transfer_chip": null,
  "chip_held": null,
  "lineup": "",
- "result": "nothing",
+ "result": "dry",
  "early_exit": "",
  "log": [
-  "[snapshot] wrote data/prices/2026-09-16/pre.json.gz (659 players, pre for 2026-09-16)",
-  "[gate] 15min to the price change; running.",
+  "[snapshot] wrote data/prices/2026-09-17/post.json.gz (659 players, post for 2026-09-17)",
+  "[gate] 42.5h to the GW deadline, outside the 6h window; 1439min to the price change, outside 150min. Skipping.",
+  "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[{'out': 'Szoboszlai', 'in': 'Gibbs-White'}], last updated: Sept. 15, 2026, 11:28 p.m.",
+  "[tokens] refreshed FPL access token.",
   "[plan] 1 net transfer(s) to match the target squad"
  ]
 }
