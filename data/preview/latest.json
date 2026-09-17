@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-17T05:00:38+00:00",
+ "ts": "2026-09-17T05:01:16+00:00",
  "kind": "preview",
  "event_id": 5,
  "deadline": "2026-09-18T17:30:00Z",
@@ -240,7 +240,6 @@
   "[gate] 36.5h to the GW deadline, outside the 6h window; 1079min to the price change, outside 150min. Skipping.",
   "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[{'out': 'Szoboszlai', 'in': 'Gibbs-White'}], last updated: Sept. 15, 2026, 11:28 p.m.",
-  "[tokens] refreshed FPL access token.",
   "[plan] 1 net transfer(s) to match the target squad"
  ]
 }
