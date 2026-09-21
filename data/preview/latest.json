@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-21T15:00:47+00:00",
+ "ts": "2026-09-21T16:00:45+00:00",
  "kind": "preview",
  "event_id": 6,
  "deadline": "2026-10-10T10:00:00Z",
@@ -7,7 +7,7 @@
  "entry": 7953181,
  "target": "Tom Dollimore",
  "fix": {
-  "updated": "Sept. 18, 2026, 4:43 p.m.",
+  "updated": "Sept. 21, 2026, 4:54 p.m.",
   "gw": 6,
   "chips": {
    "WC1": "available",
@@ -22,39 +22,39 @@
    "Gabriel",
    "Tarkowski",
    "N.Williams",
+   "Maguire",
    "Saka",
    "Palmer",
    "Rogers",
    "Mbeumo",
    "Gibbs-White",
-   "Calvert-Lewin",
    "João Pedro",
    "Scherpen",
    "McBurnie",
-   "Maguire",
-   "O'Shea"
+   "O'Shea",
+   "Calvert-Lewin"
   ],
   "starters": [
    "Raya",
    "Gabriel",
    "Tarkowski",
    "N.Williams",
+   "Maguire",
    "Saka",
    "Palmer",
    "Rogers",
    "Mbeumo",
    "Gibbs-White",
-   "Calvert-Lewin",
    "João Pedro"
   ],
   "bench": [
    "Scherpen",
    "McBurnie",
-   "Maguire",
-   "O'Shea"
+   "O'Shea",
+   "Calvert-Lewin"
   ],
-  "captain": "Gibbs-White",
-  "vice": "Saka"
+  "captain": "Saka",
+  "vice": "Gibbs-White"
  },
  "team": {
   "bank": 0,
@@ -229,15 +229,15 @@
  "chips_activated": [],
  "transfer_chip": null,
  "chip_held": null,
- "lineup": "lineup already matches",
+ "lineup": "[dry-run] would set XI/bench reordered, captain Saka, vice Gibbs-White",
  "result": "dry",
  "early_exit": "",
  "log": [
-  "[gate] 451.0h to the GW deadline, outside the 6h window; 479min to the price change, outside 150min. Skipping.",
+  "[gate] 450.0h to the GW deadline, outside the 6h window; 419min to the price change, outside 150min. Skipping.",
   "[preview] hourly dry run for the app's preview",
-  "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 18, 2026, 4:43 p.m.",
+  "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 21, 2026, 4:54 p.m.",
   "[tokens] refreshed FPL access token.",
   "[plan] already matching (holding Bogle for Maguire)",
-  "[lineup] lineup already matches"
+  "[lineup] [dry-run] would set XI/bench reordered, captain Saka, vice Gibbs-White"
  ]
 }
