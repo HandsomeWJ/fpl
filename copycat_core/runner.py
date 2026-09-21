@@ -330,6 +330,7 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
         if nkey not in state["notified"]:
             state["notified"].append(nkey)
             new_skips.append(f"- {tr['out']} -> {tr['in']}: {reason}")
+    rec.new_skips = list(new_skips)
     if new_skips or to_apply:
         from .log import report_lines
         title = f"FPL Copycat GW{event_id}: " + \

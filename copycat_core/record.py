@@ -8,7 +8,9 @@ Two outputs, both committed by the workflow's persist step:
                              do" panel, never more than an hour stale.
   data/ledger/<ts>_gw<N>.json  one file per LIVE run that did or attempted something:
                              transfers applied, hits taken, chips played or held, lineup
-                             changes, skips, failures. The app's ledger.
+                             changes, NEWLY reported skips, failures. The app's ledger.
+                             A run that merely repeats an already-reported skip writes
+                             no file (2026-09-21: 10 identical "1 skipped" files a day).
 
 The record is built incrementally by runner.run(); nothing here talks to FPL.
 """
@@ -39,6 +41,9 @@ class RunRecord:
     pairs: list = field(default_factory=list)    # net out/in name pairs
     to_apply: list = field(default_factory=list) # {out,in,out_id,in_id,sell,cost,role,enables}
     skipped: list = field(default_factory=list)  # {out,in,reason}
+    # skips reported for the first time in this run (state["notified"] had not seen them);
+    # a repeat of an already-reported skip is not a ledger event
+    new_skips: list = field(default_factory=list)  # ["Out -> In: reason", ...]
     # downgrades still in force from earlier runs: we hold `have` where the target has
     # `held`, and the net diff deliberately does not buy `held` back
     held_downgrades: list = field(default_factory=list)  # {gw,held,have,enabled}
@@ -75,7 +80,7 @@ def write_ledger(rec: RunRecord, data_dir: str) -> Optional[str]:
     if rec.dry:
         return None
     acted = (rec.to_apply or rec.chips_activated or rec.transfer_chip or rec.chip_held
-             or rec.skipped or rec.result == "failed" or rec.lineup.startswith("XI/bench"))
+             or rec.new_skips or rec.result == "failed" or rec.lineup.startswith("XI/bench"))
     if not acted:
         return None
     stamp = rec.ts.replace(":", "").replace("-", "")[:15]
