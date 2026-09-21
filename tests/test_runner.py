@@ -256,3 +256,13 @@ def test_preview_record_marks_downgrade_transfers(reveal_html):
     assert roles == [("Palmer", "Fodder", "downgrade", "Calvert-Lewin -> Wissa"),
                      ("Calvert-Lewin", "Wissa", "mirror", None)]
     assert prev["held_downgrades"] == [] and prev["skipped"] == []
+
+
+def test_on_record_hook_receives_the_finished_record(reveal_html):
+    got = []
+    s = FakeSession(mk_bootstrap(), mk_picks(OUR_SQUAD), bank=0, free=2, made=5)
+    deps = _deps(s, reveal_html)
+    deps.on_record = got.append
+    run(_settings(DRY_RUN="1"), deps)
+    assert len(got) == 1 and got[0].kind == "preview" and len(got[0].to_apply) == 3
+    assert got[0].log and got[0].log[0].startswith("Fix reveal for Tom Dollimore")

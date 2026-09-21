@@ -42,6 +42,9 @@ class Deps:
     fetch_fix: Optional[Callable[[str], dict]] = None
     now_fn: Callable[[], datetime] = lambda: datetime.now(timezone.utc)
     deadline_fn: Callable = public_next_deadline
+    # Called with the finished RunRecord (log attached) at the end of every run, so a
+    # host without a data_dir (the app) can store records its own way.
+    on_record: Optional[Callable[["record.RunRecord"], None]] = None
 
 
 @dataclass
@@ -76,6 +79,14 @@ def _finish(deps: Deps, state: dict, dry: bool, changed: bool,
     if rec is not None and settings is not None and settings.data_dir:
         from .log import report_lines
         record.safe_write_records(rec, settings.data_dir, report_lines)
+    if rec is not None and deps.on_record is not None:
+        from .log import report_lines
+        try:
+            rec.log = list(report_lines)
+            rec.ts = rec.ts or datetime.now(timezone.utc).isoformat(timespec="seconds")
+            deps.on_record(rec)
+        except Exception as e:
+            log(f"[record] on_record failed: {e}")
     log(f"Done. changed={changed} dry_run={dry}")
 
 
