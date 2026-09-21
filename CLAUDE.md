@@ -298,7 +298,12 @@ Owner decided 2026-09-21: downgrade fix, then Phase 2. Dugout now contains the m
 job behind the core's three ports: `PostgresState` (JSON row in `mirror_kv`),
 `PostgresTokenStore` (Fernet, env `TOKEN_KEY`; **Dugout has its OWN token chain**, seeded
 from a private-window login through the UI's Owner actions - never the Actions chain),
-`TelegramNotifier` (24h dedupe per title; "applied" always sent). `Deps.on_record`
+`TelegramNotifier` (24h dedupe; run outcomes use Dugout's **compact format**,
+`api/app/telegram_format.py`, built from the RunRecord: header GW/count/chip, one line
+per transfer with prices, hit + bank after, chips, skips with short reasons and
+shortfall, suggested downgrade + approve hint, lineup armbands, time + source; sent for
+Dugout live runs and for newly imported Actions ledger files - so Telegram already
+reports what Actions does while it is the executor). `Deps.on_record`
 stores every RunRecord in `mirror_runs` with `agree` = plan equals the Actions preview
 (pairs + to_apply + early_exit); live acted runs also feed the ledger (`mirror/...`).
 Ticks at :05 :20 :35 :50 UTC (Actions dispatches at :00 :15 :30 :45), same gate +
