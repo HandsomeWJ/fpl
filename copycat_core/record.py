@@ -37,8 +37,11 @@ class RunRecord:
     team: dict = field(default_factory=dict)     # bank, free_transfers, made, squad names, chips
     plan_note: str = ""
     pairs: list = field(default_factory=list)    # net out/in name pairs
-    to_apply: list = field(default_factory=list) # {out,in,out_id,in_id,sell,cost}
+    to_apply: list = field(default_factory=list) # {out,in,out_id,in_id,sell,cost,role,enables}
     skipped: list = field(default_factory=list)  # {out,in,reason}
+    # downgrades still in force from earlier runs: we hold `have` where the target has
+    # `held`, and the net diff deliberately does not buy `held` back
+    held_downgrades: list = field(default_factory=list)  # {gw,held,have,enabled}
     hits: dict = field(default_factory=lambda: {"count": 0, "points": 0})
     chips_activated: list = field(default_factory=list)
     transfer_chip: Optional[str] = None

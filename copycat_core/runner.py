@@ -20,9 +20,10 @@ from . import execute, fix as fixmod, record, snapshot
 from .fpl import (TokenManager, fpl_session, get_bootstrap, get_my_gw_transfers,
                   get_my_team, open_gameweek, public_next_deadline)
 from .log import log
-from .plan import (CHIP_MAP, TRANSFER_CHIPS, apply_hit_policy, build_player_index,
-                   decide_transfer_chip, net_out_transfer_log, plan_net_transfers,
-                   plan_transfers, resolve_target_squad, squad_converges)
+from .plan import (CHIP_MAP, TRANSFER_CHIPS, active_downgrades, apply_hit_policy,
+                   build_player_index, decide_transfer_chip, net_out_transfer_log,
+                   plan_enabling_downgrades, plan_net_transfers, plan_transfers,
+                   resolve_ids, resolve_target_squad, squad_converges)
 from .ports import (GitHubIssueNotifier, GitHubVariableTokenStore, JsonFileState,
                     LogNotifier, Notifier, NullTokenStore, StateStore, TokenStore)
 from .schedule import should_run_now
@@ -210,8 +211,16 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
     # Prefer the net diff to the target squad over replaying the transfer log; the log
     # is chronological and can contain reversals FPL will reject as a batch.
     target_squad = resolve_target_squad(fix, settings.hold_latest)
+    target_ids = resolve_ids(target_squad, idx, bootstrap) if len(target_squad) == 15 else None
+    # Enabling downgrades still in force (see plan_enabling_downgrades). Under a
+    # whole-squad chip they are ignored so the mirror can converge exactly.
+    holds = active_downgrades(state, squad_ids, target_ids, elements_by_id)
+    rec.held_downgrades = list(state.get("downgrades", []))
+    use_holds = holds if (active_chip not in TRANSFER_CHIPS and not unlimited) else None
+    if holds and use_holds is None:
+        log(f"[downgrade] {len(holds)} hold(s) ignored: whole-squad chip / unlimited transfers")
     net_pairs, net_note = plan_net_transfers(target_squad, squad_ids, idx, bootstrap,
-                                             elements_by_id)
+                                             elements_by_id, held=use_holds)
     if net_pairs is None:
         pending = net_out_transfer_log(fix["transfers"])
         log(f"[plan] falling back to the transfer log ({net_note}); "
@@ -227,6 +236,11 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
                           bootstrap=bootstrap, elements_by_id=elements_by_id,
                           squad_ids=squad_ids, sell_price=sell_price, bank=bank,
                           club_counts=club_counts, already_in=already_in, debug=debug)
+    new_downgrades: list = []
+    if settings.allow_downgrade and net_pairs is not None:
+        new_downgrades = plan_enabling_downgrades(
+            plan, pending=pending, fix=fix, target_ids=target_ids, event_id=event_id,
+            idx=idx, bootstrap=bootstrap, elements_by_id=elements_by_id, sell_price=sell_price)
     to_apply, skipped = plan.to_apply, plan.skipped
     rec.plan_note, rec.pairs = net_note, list(pending) if net_pairs is not None else list(pending)
 
@@ -247,8 +261,9 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
                                 made=made, allow_hits=settings.allow_hits)
 
     rec.to_apply = [{"out": p_out["web_name"], "in": p_in["web_name"], "out_id": p_out["id"],
-                     "in_id": p_in["id"], "sell": sell, "cost": cost}
-                    for _, p_out, p_in, sell, cost, _ in to_apply]
+                     "in_id": p_in["id"], "sell": sell, "cost": cost,
+                     "role": tr.get("role", "mirror"), "enables": tr.get("enables")}
+                    for tr, p_out, p_in, sell, cost, _ in to_apply]
     if not unlimited and active_chip not in TRANSFER_CHIPS:
         extra = max(len(to_apply) - max((free_transfers or 0) - made, 0), 0)
         rec.hits = {"count": extra, "points": -4 * extra}
@@ -262,8 +277,12 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
             deps.notifier.notify(f"FPL Copycat: transfer submission FAILED (GW{event_id})")
             _finish(deps, state, dry, changed, rec=rec, settings=settings)
             raise SubmitFailed()
+        applied_keys = {key for *_, key in to_apply}
         for _, _, _, _, _, key in to_apply:
             state["processed"].append(key)
+        for d in new_downgrades:
+            if f"gw{event_id}:{d['held_name']}->{d['have_name']}" in applied_keys:
+                state.setdefault("downgrades", []).append(d)
         changed = True
         rec.result = "dry" if dry else "applied"
 
@@ -277,8 +296,12 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
         except Exception as e:
             fresh = picks
             log(f"[lineup] could not re-read squad ({e}); using the pre-transfer picks")
+        owned_now = {p["element"] for p in fresh}
+        subs = {d["held"]: d["have"] for d in state.get("downgrades", [])
+                if d["have"] in owned_now and d["held"] not in owned_now}
         lineup_changed, lineup_note = execute.sync_lineup(
-            s, entry, fresh, fix, idx, bootstrap, elements_by_id, dry, chip=team_chip)
+            s, entry, fresh, fix, idx, bootstrap, elements_by_id, dry, chip=team_chip,
+            substitutions=subs)
         log(f"[lineup] {lineup_note}")
         rec.lineup = lineup_note
         changed = changed or lineup_changed

@@ -116,8 +116,14 @@ def resolve_target_squad(fix: dict, hold_latest: int) -> list:
     return target_squad
 
 
-def plan_net_transfers(fix_squad, squad_ids, idx, bootstrap, elements_by_id):
+def plan_net_transfers(fix_squad, squad_ids, idx, bootstrap, elements_by_id, held=None):
     """Net diff from my squad to the target manager's, as out/in name pairs.
+
+    `held` ({held_id: have_id}) are enabling downgrades still in force: we deliberately
+    own `have` where the target owns `held`, so that pair is left out of the diff
+    instead of being bought back (which would cost a transfer for a bench player and
+    likely be unaffordable again). Callers pass nothing under WC/FH so the whole squad
+    converges when a chip is played.
 
     The reveal page lists a CHRONOLOGICAL transfer log for the gameweek, not a net
     change. Under a Free Hit especially it contains reversals (A->B then B->A) and the
@@ -141,10 +147,17 @@ def plan_net_transfers(fix_squad, squad_ids, idx, bootstrap, elements_by_id):
     if len(target) != 15:
         return None, f"reveal squad resolved to {len(target)} distinct players"
 
+    holding = []
+    for held_id, have_id in (held or {}).items():
+        if held_id in target and have_id in squad_ids and held_id not in squad_ids:
+            target = (target - {held_id}) | {have_id}
+            holding.append(f"{elements_by_id[have_id]['web_name']} for "
+                           f"{elements_by_id[held_id]['web_name']}")
+    suffix = f" (holding {', '.join(holding)})" if holding else ""
     sell = sorted(squad_ids - target)
     buy = sorted(target - squad_ids)
     if not sell and not buy:
-        return [], "already matching"
+        return [], "already matching" + suffix
     by_pos_out, by_pos_in = {}, {}
     for i in sell:
         by_pos_out.setdefault(elements_by_id[i]["element_type"], []).append(i)
@@ -160,7 +173,7 @@ def plan_net_transfers(fix_squad, squad_ids, idx, bootstrap, elements_by_id):
         for o, i in zip(outs, by_pos_in[pos]):
             pairs.append({"out": elements_by_id[o]["web_name"],
                           "in": elements_by_id[i]["web_name"]})
-    return pairs, f"{len(pairs)} net transfer(s) to match the target squad"
+    return pairs, f"{len(pairs)} net transfer(s) to match the target squad{suffix}"
 
 
 def squad_converges(fix_squad, projected_ids, idx, bootstrap, elements_by_id):
@@ -339,7 +352,173 @@ def apply_hit_policy(to_apply: list, skipped: list, *, unlimited: bool,
         log(f"TAKING HITS: {len(to_apply)} transfer(s) with {allowed} free -> "
             f"{extra} x -4 = -{extra * 4} points (ALLOW_HITS=1).")
         return to_apply
-    for tr, _, _, _, _, _ in to_apply[allowed:]:
+    kept, cut = to_apply[:allowed], to_apply[allowed:]
+    for tr, _, _, _, _, _ in cut:
         skipped.append((tr, f"would need a -4 hit "
                             f"(only {allowed} free transfer(s) left)"))
-    return to_apply[:allowed]
+    # A downgrade only exists to fund one specific transfer; never apply one without
+    # the other.
+    cut_pairs = {f"{tr['out']} -> {tr['in']}" for tr, *_ in cut}
+    kept_pairs = {f"{tr['out']} -> {tr['in']}" for tr, *_ in kept}
+    final = []
+    for item in kept:
+        tr = item[0]
+        if tr.get("role") == "downgrade" and tr.get("enables") in cut_pairs:
+            skipped.append((tr, f"only needed to fund {tr['enables']}, which needs a -4 hit"))
+            continue
+        if any(o[0].get("enables") == f"{tr['out']} -> {tr['in']}" for o in cut):
+            skipped.append((tr, "its funding downgrade would need a -4 hit"))
+            continue
+        final.append(item)
+    return final
+
+
+# ---------------------------------------------------------------- enabling downgrades
+UNAFFORDABLE = "can't afford it even after the other transfers free up money"
+
+
+def resolve_ids(names, idx, bootstrap) -> Optional[set]:
+    """Names -> FPL ids, or None if any name is unresolvable/ambiguous."""
+    out = set()
+    for nm in names or []:
+        m = match_player(idx, nm, bootstrap)
+        if not m or m == "ambiguous":
+            return None
+        out.add(m["id"])
+    return out
+
+
+def _ep(e: dict) -> float:
+    try:
+        return float(e.get("ep_next") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _club_counts(ids_, elements_by_id) -> dict:
+    cc: dict = {}
+    for i in ids_:
+        t = elements_by_id[i]["team"]
+        cc[t] = cc.get(t, 0) + 1
+    return cc
+
+
+def active_downgrades(state: dict, squad_ids: set, target_ids: Optional[set],
+                      elements_by_id: dict) -> dict:
+    """Downgrades from earlier runs that still apply, as {held_id: have_id}.
+
+    A record lapses when we own the held player again (bought back, e.g. under a
+    wildcard), when we no longer own the cheaper stand-in, or when the target has sold
+    the held player - in each case there is nothing left to hold. Prunes `state`.
+    """
+    keep, holds = [], {}
+    for d in state.get("downgrades", []):
+        held, have = d.get("held"), d.get("have")
+        if held in squad_ids or have not in squad_ids or (target_ids is not None and held not in target_ids):
+            log(f"[downgrade] {d.get('have_name')} for {d.get('held_name')} no longer applies; dropping the hold")
+            continue
+        keep.append(d)
+        holds[held] = have
+    state["downgrades"] = keep
+    return holds
+
+
+def plan_enabling_downgrades(plan: "PlanResult", *, pending, fix, target_ids, event_id, idx,
+                             bootstrap, elements_by_id, sell_price) -> list:
+    """Fund unaffordable mirrored transfers by downgrading a shared BENCH player.
+
+    Copying breaks most often on money, not names: the copier's budget drifts from the
+    target's (different purchase prices, different sell-on profit), so one day the
+    target's swap costs 0.3 more than we can raise. Skipping it leaves us permanently a
+    player behind. Instead: sell one of the target's bench players we also own for the
+    cheapest like-for-like that covers the shortfall. Diverging on someone the target
+    benches costs ~nothing in points as long as we keep mirroring their XI, and the
+    cheapest drop keeps the most team value.
+
+    Rules: candidates are players in the target's bench (per the reveal page) that we
+    own and are not already selling; the stand-in is the same position, not owned by
+    either side, available (status 'a'), keeps every club at <= 3 after the whole batch,
+    and its price drop covers the shortfall. Ranked by (smallest drop, smallest FPL
+    ep_next loss). Starters are never downgraded - that is the owner's call.
+
+    Mutates `plan` (to_apply, skipped, projected_ids, bank_left) and returns the new
+    downgrade records for the caller to persist after a successful submit.
+    """
+    unaffordable = [(tr, why) for tr, why in plan.skipped if why == UNAFFORDABLE]
+    if not unaffordable:
+        return []
+    if target_ids is None:
+        log("[downgrade] target squad unresolvable; cannot choose a downgrade")
+        return []
+    bench_ids = resolve_ids(fix.get("bench") or [], idx, bootstrap)
+    if not bench_ids:
+        log("[downgrade] the reveal page gave no usable bench; cannot choose a downgrade")
+        return []
+    outs = set()
+    for tr in pending:
+        m = match_player(idx, tr["out"], bootstrap)
+        if m and m != "ambiguous":
+            outs.add(m["id"])
+    squad = set(plan.projected_ids)
+    bank = plan.bank_left
+    sell = dict(sell_price)
+    records = []
+    for tr, why in unaffordable:
+        p_out = match_player(idx, tr["out"], bootstrap, restrict_ids=squad)
+        if not p_out or p_out == "ambiguous":
+            continue
+        p_in = match_player(idx, tr["in"], bootstrap, etype=p_out["element_type"])
+        if not p_in or p_in == "ambiguous":
+            continue
+        out_sell = sell.get(p_out["id"], p_out["now_cost"])
+        shortfall = p_in["now_cost"] - (bank + out_sell)
+        best = None
+        if shortfall > 0:
+            for x_id in sorted((squad & target_ids & bench_ids) - outs - {p_out["id"]}):
+                x = elements_by_id[x_id]
+                x_sell = sell.get(x_id, x["now_cost"])
+                for y in bootstrap["elements"]:
+                    if (y["element_type"] != x["element_type"] or y["id"] in squad
+                            or y["id"] in target_ids or y.get("status", "a") != "a"):
+                        continue
+                    drop = x_sell - y["now_cost"]
+                    if drop < shortfall:
+                        continue
+                    after = (squad - {x_id, p_out["id"]}) | {y["id"], p_in["id"]}
+                    if any(v > 3 for v in _club_counts(after, elements_by_id).values()):
+                        continue
+                    rank = (drop, round(_ep(x) - _ep(y), 2), y["web_name"])
+                    if best is None or rank < best[0]:
+                        best = (rank, x, y, x_sell, drop)
+            if best is None:
+                idx_ = plan.skipped.index((tr, why))
+                plan.skipped[idx_] = (tr, f"{why}; {shortfall / 10:.1f} short and no bench "
+                                          f"downgrade covers it")
+                log(f"[downgrade] {tr['out']} -> {tr['in']} is {shortfall / 10:.1f} short and no "
+                    f"downgrade of a shared bench player covers it; leaving it skipped")
+                continue
+            _, x, y, x_sell, drop = best
+            dkey = f"gw{event_id}:{x['web_name']}->{y['web_name']}"
+            log(f"[downgrade] {tr['out']} -> {tr['in']} is {shortfall / 10:.1f} short; funding it "
+                f"by downgrading {x['web_name']} ({x_sell / 10:.1f}, on their bench) -> "
+                f"{y['web_name']} ({y['now_cost'] / 10:.1f}, ep {_ep(y):.1f} vs {_ep(x):.1f}). "
+                f"ALLOW_DOWNGRADE=1.")
+            plan.to_apply.append(({"out": x["web_name"], "in": y["web_name"], "role": "downgrade",
+                                   "enables": f"{tr['out']} -> {tr['in']}"},
+                                  x, y, x_sell, y["now_cost"], dkey))
+            squad = (squad - {x["id"]}) | {y["id"]}
+            bank += drop
+            sell[y["id"]] = y["now_cost"]
+            records.append({"gw": event_id, "held": x["id"], "held_name": x["web_name"],
+                            "have": y["id"], "have_name": y["web_name"],
+                            "enabled": f"{tr['out']} -> {tr['in']}"})
+        # the mirrored transfer itself, now affordable (or already was after a prior downgrade)
+        key = f"gw{event_id}:{tr['out']}->{tr['in']}"
+        plan.to_apply.append((tr, p_out, p_in, out_sell, p_in["now_cost"], key))
+        plan.skipped.remove((tr, why))
+        squad = (squad - {p_out["id"]}) | {p_in["id"]}
+        bank = bank + out_sell - p_in["now_cost"]
+        sell[p_in["id"]] = p_in["now_cost"]
+    plan.projected_ids = squad
+    plan.bank_left = bank
+    return records

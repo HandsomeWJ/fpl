@@ -19,7 +19,7 @@ import requests
 
 from .log import log, report_lines
 
-EMPTY_STATE = {"processed": [], "chips_done": [], "notified": []}
+EMPTY_STATE = {"processed": [], "chips_done": [], "notified": [], "downgrades": []}
 
 
 class StateStore(Protocol):

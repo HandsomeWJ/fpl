@@ -98,3 +98,28 @@ def test_team_chip_activation_posts_current_picks():
     s.post = lambda url, json=None, **kw: FakeResponse(400, None, "no")
     assert activate_team_chip(s, 1, "3xc", s.picks) is False
     assert any(l.startswith("ERROR activating 3xc: 400") for l in logmod.report_lines)
+
+
+def test_lineup_sync_substitutes_a_held_downgrade():
+    """After an enabling downgrade we own Fodder where Tom owns Palmer (bench slot 13).
+    The lineup still mirrors Tom's, with Fodder taking Palmer's slot."""
+    bs, idx, by_id = _ctx()
+    bs["elements"].append({"id": 902, "web_name": "Fodder", "first_name": "F", "second_name": "Fodder",
+                           "element_type": 3, "team": 12, "now_cost": 92, "selected_by_percent": "1.0",
+                           "status": "a"})
+    from copycat_core.plan import build_player_index
+    idx = build_player_index(bs); by_id = {e["id"]: e for e in bs["elements"]}
+    fix = {"starters": TOM_STARTERS, "bench": TOM_BENCH, "captain": "B.Fernandes", "vice": "Wissa"}
+    ours = [n for n in TOM_SQUAD if n != "Palmer"]
+    picks = mk_picks(ours) + [{"element": 902, "position": 15, "is_captain": False,
+                               "is_vice_captain": False, "selling_price": 92}]
+    palmer = BY_NAME["Palmer"][0]
+    assert sync_lineup(None, 1, picks, fix, idx, bs, by_id, dry=True) == \
+        (False, "lineup names do not match the squad we own")
+    changed, note = sync_lineup(None, 1, picks, fix, idx, bs, by_id, dry=True, substitutions={palmer: 902})
+    assert not changed and note == "[dry-run] would set XI/bench reordered, captain B.Fernandes, vice Wissa"
+    s = FakeSession(bs, picks)
+    changed, note = sync_lineup(s, 1, picks, fix, idx, bs, by_id, dry=False, substitutions={palmer: 902})
+    assert changed
+    payload = s.posts[-1][1]
+    assert payload["picks"][12]["element"] == 902           # Palmer's bench slot (position 13)

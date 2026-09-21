@@ -102,7 +102,7 @@ def submit_transfers(s, entry: int, event_id: int, to_apply: list,
 
 
 def sync_lineup(s_sess, entry, picks, fix, idx, bootstrap, elements_by_id, dry,
-                chip: Optional[str] = None):
+                chip: Optional[str] = None, substitutions: Optional[dict] = None):
     """Match the target manager's starting XI, bench order and armbands.
 
     Only safe once the squad already matches theirs, so the caller gates on
@@ -121,15 +121,19 @@ def sync_lineup(s_sess, entry, picks, fix, idx, bootstrap, elements_by_id, dry,
     if not fix.get("captain"):
         return False, "no captain found on the reveal page"
 
+    # substitutions: {their_player_id: our_stand_in_id} for enabling downgrades still in
+    # force - the stand-in takes the held player's slot (always a bench slot).
+    substitutions = substitutions or {}
     order, seen = [], set()
     for nm in starters + bench:
         m = match_player(idx, nm, bootstrap)
         if not m or m == "ambiguous":
             return False, f"could not resolve '{nm}'"
-        if m["id"] in seen:
+        pid = substitutions.get(m["id"], m["id"])
+        if pid in seen:
             return False, f"'{nm}' resolved to a duplicate player"
-        seen.add(m["id"])
-        order.append(m["id"])
+        seen.add(pid)
+        order.append(pid)
 
     owned = {p["element"] for p in picks}
     if seen != owned:

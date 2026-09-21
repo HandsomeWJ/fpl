@@ -27,6 +27,10 @@ class Settings:
     # Exclude the target's N most recent transfers from the target squad, so their
     # latest move can be tested on its own instead of arriving with a catch-up batch.
     hold_latest: int
+    # When a mirrored transfer is unaffordable, fund it by downgrading one of the
+    # target's BENCH players we share to a cheaper like-for-like (the "enabling
+    # downgrade"). Owner decision 2026-09-21: on by default on the TEST account.
+    allow_downgrade: bool
     # Set by the external scheduler's dispatch: behave like cron (gated).
     scheduled: bool
     event_name: str
@@ -64,6 +68,7 @@ class Settings:
             allow_hits=_flag(env, "ALLOW_HITS"),
             allow_transfer_chip=_flag(env, "ALLOW_TRANSFER_CHIP"),
             hold_latest=int(env.get("HOLD_LATEST_TRANSFERS") or 0),
+            allow_downgrade=_flag(env, "ALLOW_DOWNGRADE"),
             scheduled=_flag(env, "SCHEDULED"),
             event_name=env.get("GITHUB_EVENT_NAME", ""),
             fix_cookie=env.get("FIX_COOKIE"),

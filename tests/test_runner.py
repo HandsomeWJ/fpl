@@ -191,3 +191,68 @@ def test_dry_run_writes_preview_only(reveal_html):
     assert prev["kind"] == "preview" and prev["result"] == "dry" and prev["to_apply"] == []
     assert prev["plan_note"] == "already matching"
     assert glob.glob(os.path.join(settings.data_dir, "ledger", "*.json")) == []
+
+
+# ---------------------------------------------------------------- enabling downgrades
+from tests.conftest import GK, MID, PLAYERS, TOM_BENCH  # noqa: E402
+
+NEARLY = [n if n != "Wissa" else "Calvert-Lewin" for n in TOM_SQUAD]   # 0.1 short of Wissa
+
+
+def _bs_market():
+    return mk_bootstrap(list(PLAYERS) + [(901, GK, "Cheapo", 11, 40), (902, MID, "Fodder", 12, 92)])
+
+
+def test_live_run_funds_an_unaffordable_transfer_by_downgrading_a_bench_player(reveal_html):
+    s = FakeSession(_bs_market(), mk_picks(NEARLY), bank=0, free=2, made=0,
+                    chips={"wildcard": "available", "freehit": "played", "bboost": "available", "3xc": "available"})
+    deps = _deps(s, reveal_html)
+    run(_settings(ALLOW_DOWNGRADE="1", ALLOW_HITS="1"), deps)
+    lines = logmod.report_lines
+    assert "[plan] 1 net transfer(s) to match the target squad" in lines
+    assert any(l.startswith("[downgrade] Calvert-Lewin -> Wissa is 0.1 short; funding it by downgrading Palmer (9.5, on their bench) -> Fodder (9.2") for l in lines)
+    sub = next(l for l in lines if l.startswith("Submitting 2 transfer(s): "))
+    assert "Palmer -> Fodder" in sub and "Calvert-Lewin -> Wissa" in sub
+    owned = {p["element"] for p in s.picks}
+    assert owned == (set(ids(TOM_SQUAD)) - {BY_NAME["Palmer"][0]}) | {902}
+    # lineup mirrored with Fodder in Palmer's bench slot
+    assert "[lineup] XI/bench reordered, captain B.Fernandes, vice Wissa" in lines
+    picks_post = [p for u, p in s.posts if "/api/my-team/" in u and "picks" in p][-1]
+    assert picks_post["picks"][12]["element"] == 902
+    state = deps.state.saved[-1]
+    assert state["downgrades"] == [{"gw": 3, "held": BY_NAME["Palmer"][0], "held_name": "Palmer", "have": 902,
+                                    "have_name": "Fodder", "enabled": "Calvert-Lewin -> Wissa"}]
+    assert "gw3:Palmer->Fodder" in state["processed"] and "gw3:Calvert-Lewin->Wissa" in state["processed"]
+    assert deps.notifier.sent[0][0] == "FPL Copycat GW3: 2 transfer(s) applied"
+
+    # next run: the hold keeps us from buying Palmer back; nothing to do, lineup fine
+    logmod.reset_report()
+    run(_settings(ALLOW_DOWNGRADE="1", ALLOW_HITS="1"), deps)
+    lines = logmod.report_lines
+    assert "[plan] already matching (holding Fodder for Palmer)" in lines
+    assert not any(l.startswith("Submitting") for l in lines)
+    assert "[lineup] lineup already matches" in lines
+    assert deps.state.saved[-1]["downgrades"][0]["have"] == 902
+
+
+def test_downgrade_off_keeps_the_old_skip(reveal_html):
+    s = FakeSession(_bs_market(), mk_picks(NEARLY), bank=0, free=2, made=0,
+                    chips={"wildcard": "available", "freehit": "played", "bboost": "available", "3xc": "available"})
+    deps = _deps(s, reveal_html)
+    run(_settings(ALLOW_DOWNGRADE="0", ALLOW_HITS="1"), deps)
+    assert any("Calvert-Lewin -> Wissa: can't afford it" in l for l in logmod.report_lines) or \
+        deps.notifier.sent[0][0] == "FPL Copycat GW3: action needed"
+    assert not any(l.startswith("[downgrade]") for l in logmod.report_lines)
+
+
+def test_preview_record_marks_downgrade_transfers(reveal_html):
+    import json
+    s = FakeSession(_bs_market(), mk_picks(NEARLY), bank=0, free=2, made=0,
+                    chips={"wildcard": "available", "freehit": "played", "bboost": "available", "3xc": "available"})
+    deps = _deps(s, reveal_html)
+    run(_settings(DRY_RUN="1", ALLOW_DOWNGRADE="1", ALLOW_HITS="1"), deps)
+    prev = json.load(open(os.path.join(TMP, "data", "preview", "latest.json")))
+    roles = [(t["out"], t["in"], t["role"], t["enables"]) for t in prev["to_apply"]]
+    assert roles == [("Palmer", "Fodder", "downgrade", "Calvert-Lewin -> Wissa"),
+                     ("Calvert-Lewin", "Wissa", "mirror", None)]
+    assert prev["held_downgrades"] == [] and prev["skipped"] == []
