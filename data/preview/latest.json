@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-21T06:00:37+00:00",
+ "ts": "2026-09-21T06:16:15+00:00",
  "kind": "preview",
  "event_id": 6,
  "deadline": "2026-10-10T10:00:00Z",
@@ -213,14 +213,30 @@
    "in": "Gibbs-White"
   }
  ],
- "to_apply": [],
- "skipped": [
+ "to_apply": [
+  {
+   "out": "Maguire",
+   "in": "Bogle",
+   "out_id": 418,
+   "in_id": 330,
+   "sell": 49,
+   "cost": 46,
+   "role": "downgrade",
+   "enables": "Szoboszlai -> Gibbs-White"
+  },
   {
    "out": "Szoboszlai",
    "in": "Gibbs-White",
-   "reason": "can't afford it even after the other transfers free up money"
+   "out_id": 368,
+   "in_id": 480,
+   "sell": 70,
+   "cost": 80,
+   "role": "mirror",
+   "enables": null
   }
  ],
+ "skipped": [],
+ "held_downgrades": [],
  "hits": {
   "count": 0,
   "points": 0
@@ -228,14 +244,24 @@
  "chips_activated": [],
  "transfer_chip": null,
  "chip_held": null,
- "lineup": "",
+ "lineup": "lineup names do not match the squad we own",
  "result": "dry",
  "early_exit": "",
  "log": [
-  "[gate] 460.0h to the GW deadline, outside the 6h window; 1019min to the price change, outside 150min. Skipping.",
-  "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 18, 2026, 4:43 p.m.",
-  "[tokens] refreshed FPL access token.",
-  "[plan] 1 net transfer(s) to match the target squad"
+  "[debug] event_id=6 fix_gw=6 bank=7 free_transfers=2 made=0 unlimited=False",
+  "[debug] live squad: Raya#1(sell=6.0), Gabriel#4(sell=8.0), Tarkowski#229(sell=6.0), N.Williams#469(sell=5.0), Saka#12(sell=9.5), Palmer#154(sell=9.6), Rogers#40(sell=7.6), Mbeumo#427(sell=7.9), Szoboszlai#368(sell=7.0), Calvert-Lewin#346(sell=6.0), João Pedro#165(sell=7.6), Scherpen#564(sell=4.5), Maguire#418(sell=4.9), McBurnie#295(sell=5.5), O'Shea#304(sell=4.0)",
+  "[debug] my chips: {'bboost': 'available', '3xc': 'played', 'wildcard': 'available', 'freehit': 'played'}",
+  "[debug] transfers already made this GW: []",
+  "[plan] 1 net transfer(s) to match the target squad",
+  "[plan]   Szoboszlai -> Gibbs-White",
+  "[debug] OUT 'Szoboszlai' restricted -> Szoboszlai#368 type=3 team=14 PS7.0",
+  "[debug] OUT 'Szoboszlai' unrestricted -> Szoboszlai#368 type=3 team=14 PS7.0",
+  "[debug] IN  'Gibbs-White' etype=3 -> Gibbs-White#480 type=3 team=18 PS8.0",
+  "[downgrade] Szoboszlai -> Gibbs-White is 0.3 short; funding it by downgrading Maguire (4.9, on their bench) -> Bogle (4.6, ep 8.4 vs 2.0). ALLOW_DOWNGRADE=1.",
+  "Submitting 2 transfer(s): Maguire -> Bogle, Szoboszlai -> Gibbs-White",
+  "[debug] payload transfers=[{'element_in': 330, 'element_out': 418, 'purchase_price': 46, 'selling_price': 49}, {'element_in': 480, 'element_out': 368, 'purchase_price': 80, 'selling_price': 70}] chip=None freehit=False",
+  "[lineup] lineup names do not match the squad we own",
+  "[dry-run] would have opened an issue: 'FPL Copycat GW6: 2 transfer(s) applied' (not opening)"
  ]
 }
