@@ -1,9 +1,9 @@
 {
- "ts": "2026-09-21T06:17:19+00:00",
- "kind": "run",
+ "ts": "2026-09-21T07:00:41+00:00",
+ "kind": "preview",
  "event_id": 6,
  "deadline": "2026-10-10T10:00:00Z",
- "dry": false,
+ "dry": true,
  "entry": 7953181,
  "target": "Tom Dollimore",
  "fix": {
@@ -57,9 +57,9 @@
   "vice": "Saka"
  },
  "team": {
-  "bank": 7,
+  "bank": 0,
   "free_transfers": 2,
-  "made": 0,
+  "made": 2,
   "squad": [
    "Raya",
    "Gabriel",
@@ -69,12 +69,12 @@
    "Palmer",
    "Rogers",
    "Mbeumo",
-   "Szoboszlai",
+   "Gibbs-White",
    "Calvert-Lewin",
    "João Pedro",
    "Scherpen",
-   "Maguire",
    "McBurnie",
+   "Bogle",
    "O'Shea"
   ],
   "players": [
@@ -143,12 +143,12 @@
     "now_cost": 79
    },
    {
-    "id": 368,
-    "name": "Szoboszlai",
+    "id": 480,
+    "name": "Gibbs-White",
     "position": 9,
-    "purchase_price": 70,
-    "selling_price": 70,
-    "now_cost": 70
+    "purchase_price": 80,
+    "selling_price": 80,
+    "now_cost": 80
    },
    {
     "id": 346,
@@ -175,20 +175,20 @@
     "now_cost": 45
    },
    {
-    "id": 418,
-    "name": "Maguire",
-    "position": 13,
-    "purchase_price": 50,
-    "selling_price": 49,
-    "now_cost": 49
-   },
-   {
     "id": 295,
     "name": "McBurnie",
-    "position": 14,
+    "position": 13,
     "purchase_price": 55,
     "selling_price": 55,
     "now_cost": 55
+   },
+   {
+    "id": 330,
+    "name": "Bogle",
+    "position": 14,
+    "purchase_price": 46,
+    "selling_price": 46,
+    "now_cost": 46
    },
    {
     "id": 304,
@@ -206,37 +206,20 @@
    "freehit": "played"
   }
  },
- "plan_note": "1 net transfer(s) to match the target squad",
- "pairs": [
-  {
-   "out": "Szoboszlai",
-   "in": "Gibbs-White"
-  }
- ],
- "to_apply": [
-  {
-   "out": "Maguire",
-   "in": "Bogle",
-   "out_id": 418,
-   "in_id": 330,
-   "sell": 49,
-   "cost": 46,
-   "role": "downgrade",
-   "enables": "Szoboszlai -> Gibbs-White"
-  },
-  {
-   "out": "Szoboszlai",
-   "in": "Gibbs-White",
-   "out_id": 368,
-   "in_id": 480,
-   "sell": 70,
-   "cost": 80,
-   "role": "mirror",
-   "enables": null
-  }
- ],
+ "plan_note": "already matching (holding Bogle for Maguire)",
+ "pairs": [],
+ "to_apply": [],
  "skipped": [],
- "held_downgrades": [],
+ "held_downgrades": [
+  {
+   "gw": 6,
+   "held": 418,
+   "held_name": "Maguire",
+   "have": 330,
+   "have_name": "Bogle",
+   "enabled": "Szoboszlai -> Gibbs-White"
+  }
+ ],
  "hits": {
   "count": 0,
   "points": 0
@@ -244,24 +227,15 @@
  "chips_activated": [],
  "transfer_chip": null,
  "chip_held": null,
- "lineup": "XI/bench reordered, captain Gibbs-White, vice Saka",
- "result": "applied",
+ "lineup": "lineup already matches",
+ "result": "dry",
  "early_exit": "",
  "log": [
+  "[gate] 459.0h to the GW deadline, outside the 6h window; 959min to the price change, outside 150min. Skipping.",
+  "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 18, 2026, 4:43 p.m.",
-  "[debug] event_id=6 fix_gw=6 bank=7 free_transfers=2 made=0 unlimited=False",
-  "[debug] live squad: Raya#1(sell=6.0), Gabriel#4(sell=8.0), Tarkowski#229(sell=6.0), N.Williams#469(sell=5.0), Saka#12(sell=9.5), Palmer#154(sell=9.6), Rogers#40(sell=7.6), Mbeumo#427(sell=7.9), Szoboszlai#368(sell=7.0), Calvert-Lewin#346(sell=6.0), João Pedro#165(sell=7.6), Scherpen#564(sell=4.5), Maguire#418(sell=4.9), McBurnie#295(sell=5.5), O'Shea#304(sell=4.0)",
-  "[debug] my chips: {'bboost': 'available', '3xc': 'played', 'wildcard': 'available', 'freehit': 'played'}",
-  "[debug] transfers already made this GW: []",
-  "[plan] 1 net transfer(s) to match the target squad",
-  "[plan]   Szoboszlai -> Gibbs-White",
-  "[debug] OUT 'Szoboszlai' restricted -> Szoboszlai#368 type=3 team=14 PS7.0",
-  "[debug] OUT 'Szoboszlai' unrestricted -> Szoboszlai#368 type=3 team=14 PS7.0",
-  "[debug] IN  'Gibbs-White' etype=3 -> Gibbs-White#480 type=3 team=18 PS8.0",
-  "[downgrade] Szoboszlai -> Gibbs-White is 0.3 short; funding it by downgrading Maguire (4.9, on their bench) -> Bogle (4.6, ep 8.4 vs 2.0). ALLOW_DOWNGRADE=1.",
-  "Submitting 2 transfer(s): Maguire -> Bogle, Szoboszlai -> Gibbs-White",
-  "[debug] payload transfers=[{'element_in': 330, 'element_out': 418, 'purchase_price': 46, 'selling_price': 49}, {'element_in': 480, 'element_out': 368, 'purchase_price': 80, 'selling_price': 70}] chip=None freehit=False",
-  "Confirm phase rejected (400) but the squad already shows these transfers; treating as applied, not failed.",
-  "[lineup] XI/bench reordered, captain Gibbs-White, vice Saka"
+  "[tokens] refreshed FPL access token.",
+  "[plan] already matching (holding Bogle for Maguire)",
+  "[lineup] lineup already matches"
  ]
 }
