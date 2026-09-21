@@ -23,7 +23,9 @@
   "gw4:Wirtz->Rogers",
   "gw4:B.Fernandes->Mbeumo",
   "gw4:Canvot->Tarkowski",
-  "gw4:Ndiaye->Saka"
+  "gw4:Ndiaye->Saka",
+  "gw6:Maguire->Bogle",
+  "gw6:Szoboszlai->Gibbs-White"
  ],
  "chips_done": [
   "gw4:3xc"
@@ -64,5 +66,15 @@
   "gw4:Canvot->Tarkowski:would need a -4 hit (only 0 free transfer(s) left)",
   "gw5:Szoboszlai->Gibbs-White:can't afford it even after the other transfers free up money",
   "gw6:Szoboszlai->Gibbs-White:can't afford it even after the other transfers free up money"
+ ],
+ "downgrades": [
+  {
+   "gw": 6,
+   "held": 418,
+   "held_name": "Maguire",
+   "have": 330,
+   "have_name": "Bogle",
+   "enabled": "Szoboszlai -> Gibbs-White"
+  }
  ]
 }
