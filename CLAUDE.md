@@ -299,7 +299,22 @@ Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run ref
 **Switch-over runbook (not yet done):** one full GW of shadow agreement -> disable the
 cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> watch the first
 gated window. Never run both executors live: double transfers cost real hits.
-Owner still has to set the env vars and seed the token (assistant never handles them).
+**Shadow mode LIVE since 2026-09-21 15:11 SGT.** Owner set MIRROR_ENABLED, TOKEN_KEY,
+FIX_COOKIE, TELEGRAM_BOT_TOKEN (+ TELEGRAM_CHAT_ID 205139173 found via the bot's
+getUpdates) in Railway and seeded the FPL token from a private window; the assistant
+drove the browser but never saw a secret (TOKEN_KEY was generated straight into the
+clipboard with `| pbcopy`). First shadow tick: token refreshed, reveal fetched, plan
+"already matching (holding Bogle for Maguire)", agrees with the Actions preview;
+Telegram test delivered. Setup gotchas fixed the same day: (1) admin-token compare
+now strips whitespace (a Railway textarea value can carry a newline); (2) a refresh
+token copied from DevTools' Local Storage *object view* arrives as
+`refresh_token: "..."`-style text, which the PL token endpoint rejects with
+`invalid_grant / Failed to decode refresh token` - the seed endpoint now extracts the
+token from JSON, object-view blobs, quotes and inner whitespace, and **Verify token**
+in the Owner actions exchanges it immediately (spends one rotation) and shows the
+endpoint's verdict plus a non-secret shape of what was stored. Most reliable copy
+method remains the console: `copy(JSON.parse(localStorage.getItem(Object.keys(
+localStorage).find(k=>k.startsWith('oidc.user:')))).refresh_token)`.
 - **Phase 4 (main account).** Hit policy must be re-decided first. Recommendation on
   the table: automatic hits capped at one -4 per gameweek, Telegram approval beyond
   that (which is why Phase 2 comes first). Shortcut if the owner wants main sooner:
