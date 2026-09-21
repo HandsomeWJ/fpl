@@ -35,7 +35,7 @@ owner's machine is off. The cron fires every 15 min but is gated — see
   - `schedule.py` midnight-UK price clock and the run gate
   - `execute.py` chip activation, two-phase submit + squad verify, lineup sync
   - `runner.py` orchestration (`run(settings, deps)`) and `cli()`
-- `tests/` — pytest suite, 42 tests. **Every hard-won lesson in this file is a test**:
+- `tests/` — pytest suite, 62 tests. **Every hard-won lesson in this file is a test**:
   front-face-only squad parse, transfer-log netting, GW3 affordability ordering,
   convergence-gated chips, duplicate `confirmed:true` rejection treated as applied,
   my-team chip carried on lineup saves, persist-failure escalation, and end-to-end
@@ -125,15 +125,30 @@ still reported success. `sync_lineup` now re-sends the active my-team chip
 (`team_chip`), and chip activation checks **live** status instead of skipping on
 `state["chips_done"]`, so an undone chip is redone rather than trusted as done.
 
-## Status (2026-09-21) — mirroring live since GW3; one unaffordable swap outstanding
-GW5 matched Tom exactly (32 v 32, no hits). **Since 2026-09-15 one net transfer is skipped
-every run: Szoboszlai -> Gibbs-White.** Sell 7.0 + bank 0.7 = 7.7 < 8.0 cost; the test
-account's budget diverged from Tom's, so the copycat (which only mirrors exact swaps)
-cannot fund it and opens an "action needed" issue per GW (#204, #205). Options: hold,
-manual downgrade elsewhere, or build an "enabling downgrade" step in the planner. This
-is the most common way copying breaks and will recur on the main account. GW6 deadline
-is 10 Oct (international break). Tom's reveal lists `WC1` and `WC2` as separate chips -
-confirms wildcards refresh mid-season, as Dugout's chip planner assumes.
+## Status (2026-09-21) — enabling downgrades live; Phase 2 shipped in shadow mode
+GW5 matched Tom exactly (32 v 32, no hits). Szoboszlai -> Gibbs-White had been skipped
+since 2026-09-15 (sell 7.0 + bank 0.7 < 8.0): budget divergence, the most common way
+exact-swap copying breaks. **Fixed 2026-09-21 by the enabling-downgrade planner** (below);
+run 35567800961 applied Maguire -> Bogle + Szoboszlai -> Gibbs-White with 2 free
+transfers, lineup mirrored (C Gibbs-White). Issues #204/#205 closed. Squad now equals
+Tom's except Bogle held in place of Maguire. GW6 deadline 10 Oct (international break).
+Tom's reveal lists `WC1` and `WC2` separately - wildcards refresh mid-season.
+`copycat-core` tagged **core-v0.3.0** (downgrades + `Deps.on_record`).
+
+### Enabling downgrades (`plan_enabling_downgrades`, ALLOW_DOWNGRADE, default 1 on test)
+When a net transfer is unaffordable after every other sale: sell one of **Tom's bench
+players we share** for the cheapest available like-for-like whose price drop covers the
+shortfall (tie: smallest FPL `ep_next` loss; status must be 'a'; <=3 per club after the
+whole batch). Starters are never touched - that stays the owner's call. The downgrade is
+recorded in `state["downgrades"]` ({gw, held, have, enabled}); later runs **hold** it:
+the net diff swaps `held` for `have` in the target so it does not buy the original back,
+`sync_lineup` substitutes the stand-in into the held player's bench slot, and the hold
+lapses when Tom sells the held player, we lose the stand-in, or a WC/FH is active
+(holds are ignored under a whole-squad chip so `squad_converges` can pass). Hit policy
+never applies a downgrade without its transfer or vice versa. Records carry
+`role: mirror|downgrade` + `enables` per transfer and `held_downgrades`. 12 tests.
+Known edge: WC/FH wanted but held back -> the batch may include buying the held player
+back at a hit.
 
 ## Status (2026-09-14) — Phase 0 done: core extracted + tested; mirroring live since GW3
 GW3: 12 net transfers applied unattended, squad matches Tom exactly, Free Hit played
@@ -266,13 +281,25 @@ Dockerfile runs `npx vite build` only and CI does the type-check.
 SPA shell is served `Cache-Control: no-cache` and `/assets/*` immutable (2026-09-14): a
 phone had cached index.html and fetched a stale CSS hash after a deploy -> unstyled page.
 
-### Roadmap position (2026-09-14) — proposed order Phase 2 -> parallel GW -> Phase 4
-Phases 0, 1 and the analytics are done. Not yet decided by the owner; recorded as proposals:
-- **Phase 2 (execution into Dugout + Telegram).** Prerequisites the owner supplies
-  himself (never via the assistant): Telegram bot token + chat id pasted into Railway
-  variables; a fresh FPL refresh token seeded into Dugout from an incognito window.
-  Run Actions and Dugout side by side for one full gameweek before disabling Actions -
-  a duplicated transfer costs real hits.
+### Phase 2 — SHIPPED 2026-09-21 in shadow mode (`fpl-dugout/api/app/mirror.py`)
+Owner decided 2026-09-21: downgrade fix, then Phase 2. Dugout now contains the mirror
+job behind the core's three ports: `PostgresState` (JSON row in `mirror_kv`),
+`PostgresTokenStore` (Fernet, env `TOKEN_KEY`; **Dugout has its OWN token chain**, seeded
+from a private-window login through the UI's Owner actions - never the Actions chain),
+`TelegramNotifier` (24h dedupe per title; "applied" always sent). `Deps.on_record`
+stores every RunRecord in `mirror_runs` with `agree` = plan equals the Actions preview
+(pairs + to_apply + early_exit); live acted runs also feed the ledger (`mirror/...`).
+Ticks at :05 :20 :35 :50 UTC (Actions dispatches at :00 :15 :30 :45), same gate +
+hourly preview as `cli()`; Dugout-native snapshots at :03 :18 :33 :48 into Postgres
+(needed once Actions stops snapshotting). On first tick the dedup state is copied from
+this repo's `state/state.json` (incl. held downgrades) so shadow plans match.
+Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run refused),
+`MIRROR_ALLOW_HITS`, `MIRROR_ALLOW_DOWNGRADE`, `TOKEN_KEY`, `FIX_COOKIE`,
+`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Endpoints `/api/mirror/*`.
+**Switch-over runbook (not yet done):** one full GW of shadow agreement -> disable the
+cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> watch the first
+gated window. Never run both executors live: double transfers cost real hits.
+Owner still has to set the env vars and seed the token (assistant never handles them).
 - **Phase 4 (main account).** Hit policy must be re-decided first. Recommendation on
   the table: automatic hits capped at one -4 per gameweek, Telegram approval beyond
   that (which is why Phase 2 comes first). Shortcut if the owner wants main sooner:
