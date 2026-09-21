@@ -125,6 +125,16 @@ still reported success. `sync_lineup` now re-sends the active my-team chip
 (`team_chip`), and chip activation checks **live** status instead of skipping on
 `state["chips_done"]`, so an undone chip is redone rather than trusted as done.
 
+## Status (2026-09-21) — mirroring live since GW3; one unaffordable swap outstanding
+GW5 matched Tom exactly (32 v 32, no hits). **Since 2026-09-15 one net transfer is skipped
+every run: Szoboszlai -> Gibbs-White.** Sell 7.0 + bank 0.7 = 7.7 < 8.0 cost; the test
+account's budget diverged from Tom's, so the copycat (which only mirrors exact swaps)
+cannot fund it and opens an "action needed" issue per GW (#204, #205). Options: hold,
+manual downgrade elsewhere, or build an "enabling downgrade" step in the planner. This
+is the most common way copying breaks and will recur on the main account. GW6 deadline
+is 10 Oct (international break). Tom's reveal lists `WC1` and `WC2` as separate chips -
+confirms wildcards refresh mid-season, as Dugout's chip planner assumes.
+
 ## Status (2026-09-14) — Phase 0 done: core extracted + tested; mirroring live since GW3
 GW3: 12 net transfers applied unattended, squad matches Tom exactly, Free Hit played
 automatically on convergence. Auth, token rotation and persistence green since
