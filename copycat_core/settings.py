@@ -27,9 +27,10 @@ class Settings:
     # Exclude the target's N most recent transfers from the target squad, so their
     # latest move can be tested on its own instead of arriving with a catch-up batch.
     hold_latest: int
-    # When a mirrored transfer is unaffordable, fund it by downgrading one of the
-    # target's BENCH players we share to a cheaper like-for-like (the "enabling
-    # downgrade"). Owner decision 2026-09-21: on by default on the TEST account.
+    # When a mirrored transfer is unaffordable, the planner finds the cheapest "enabling
+    # downgrade" of a shared BENCH player. Owner decision 2026-09-21 (revised same day):
+    # RECOMMEND by default - report it, do not apply. ALLOW_DOWNGRADE=1 applies it (used
+    # for the one-off approval run).
     allow_downgrade: bool
     # Set by the external scheduler's dispatch: behave like cron (gated).
     scheduled: bool

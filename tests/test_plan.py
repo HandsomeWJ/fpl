@@ -165,7 +165,7 @@ def test_downgrade_funds_the_unaffordable_transfer_with_the_smallest_drop():
     bs = _bs_extra(Scherpen=2.0, Cheapo=2.5, Palmer=6.0, Fodder=4.0)
     plan, kw, by_id = _plan(bs, NEARLY, bank=0)
     assert plan.to_apply == [] and plan.skipped[0][1] == UNAFFORDABLE
-    recs = plan_enabling_downgrades(plan, **kw)
+    recs, suggested = plan_enabling_downgrades(plan, apply=True, **kw)
     # Palmer 9.5 -> Fodder 9.2 (drop 0.3) beats Scherpen 4.5 -> Cheapo 4.0 (drop 0.5)
     assert [(t[0]["out"], t[0]["in"]) for t in plan.to_apply] == [("Palmer", "Fodder"), ("Calvert-Lewin", "Wissa")]
     assert plan.to_apply[0][0]["role"] == "downgrade" and plan.to_apply[0][0]["enables"] == "Calvert-Lewin -> Wissa"
@@ -173,6 +173,7 @@ def test_downgrade_funds_the_unaffordable_transfer_with_the_smallest_drop():
     assert plan.projected_ids == (set(ids(TOM_SQUAD)) - {BY_NAME["Palmer"][0]}) | {902}
     assert recs == [{"gw": 5, "held": BY_NAME["Palmer"][0], "held_name": "Palmer", "have": 902,
                      "have_name": "Fodder", "enabled": "Calvert-Lewin -> Wissa"}]
+    assert suggested[0]["applied"] is True and suggested[0]["drop"] == 3 and suggested[0]["shortfall"] == 1
     assert any(l.startswith("[downgrade] Calvert-Lewin -> Wissa is 0.1 short; funding it by downgrading Palmer (9.5, on their bench) -> Fodder (9.2")
                for l in logmod.report_lines)
 
@@ -183,7 +184,7 @@ def test_downgrade_picks_a_bigger_drop_when_the_small_one_does_not_cover():
         if e["web_name"] == "Wissa":
             e["now_cost"] = 64                     # now 0.4 short: Fodder's 0.3 drop is not enough
     plan, kw, _ = _plan(bs, NEARLY, bank=0)
-    plan_enabling_downgrades(plan, **kw)
+    plan_enabling_downgrades(plan, apply=True, **kw)
     assert [(t[0]["out"], t[0]["in"]) for t in plan.to_apply] == [("Scherpen", "Cheapo"), ("Calvert-Lewin", "Wissa")]
 
 
@@ -195,7 +196,7 @@ def test_downgrade_prefers_smaller_ep_loss_on_equal_drop_and_skips_unavailable()
         if e["web_name"] == "Cheapo":
             e["status"] = "i"                      # injured fodder is useless
     plan, kw, _ = _plan(bs, NEARLY, bank=0)
-    plan_enabling_downgrades(plan, **kw)
+    plan_enabling_downgrades(plan, apply=True, **kw)
     assert plan.to_apply[0][0]["in"] == "Bargain"  # ep 6.5 loses less than Fodder's 5.9
 
 
@@ -206,7 +207,7 @@ def test_downgrade_never_touches_starters_or_planned_sales():
             e["now_cost"] = 200                    # no bench stand-in is cheaper any more
     # Kelleher (GK 5.0) is still cheaper than Raya (6.0) - but Raya STARTS for Tom
     plan, kw, _ = _plan(bs, NEARLY, bank=0)
-    assert plan_enabling_downgrades(plan, **kw) == []
+    assert plan_enabling_downgrades(plan, apply=True, **kw) == ([], [])
     assert plan.to_apply == [] and plan.skipped[0][1].endswith("0.1 short and no bench downgrade covers it")
 
 
@@ -219,8 +220,21 @@ def test_downgrade_respects_the_club_limit():
     plan, kw, by_id = _plan(bs, NEARLY, bank=0)
     # make Arsenal count 3 in our squad by swapping a shared player onto team 1
     by_id[BY_NAME["N.Williams"][0]]["team"] = 1
-    plan_enabling_downgrades(plan, **kw)
+    plan_enabling_downgrades(plan, apply=True, **kw)
     assert plan.to_apply[0][0]["in"] == "Cheapo"   # Fodder/Bargain would make a 4th Arsenal player
+
+
+def test_downgrade_recommend_mode_suggests_without_touching_the_plan():
+    bs = _bs_extra(Palmer=6.0, Fodder=4.0)
+    plan, kw, _ = _plan(bs, NEARLY, bank=0)
+    records, suggested = plan_enabling_downgrades(plan, **kw)          # default: recommend only
+    assert records == [] and plan.to_apply == [] and plan.bank_left == 0
+    assert suggested == [{"enables": "Calvert-Lewin -> Wissa", "shortfall": 1, "out": "Palmer", "in": "Fodder",
+                          "out_id": BY_NAME["Palmer"][0], "in_id": 902, "sell": 95, "cost": 92, "drop": 3,
+                          "ep_out": 6.0, "ep_in": 4.0, "applied": False}]
+    assert plan.skipped[0][1] == (UNAFFORDABLE + "; 0.1 short - suggested: downgrade Palmer (9.5, on their bench) "
+                                  "-> Fodder (9.2) to fund it; approve with ALLOW_DOWNGRADE=1")
+    assert any("SUGGESTED (not applied)" in l for l in logmod.report_lines)
 
 
 def test_net_diff_holds_a_downgrade_unless_a_chip_needs_the_full_squad():

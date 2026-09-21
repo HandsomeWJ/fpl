@@ -424,13 +424,13 @@ def active_downgrades(state: dict, squad_ids: set, target_ids: Optional[set],
 
 
 def plan_enabling_downgrades(plan: "PlanResult", *, pending, fix, target_ids, event_id, idx,
-                             bootstrap, elements_by_id, sell_price) -> list:
-    """Fund unaffordable mirrored transfers by downgrading a shared BENCH player.
+                             bootstrap, elements_by_id, sell_price, apply: bool = False) -> tuple:
+    """Find (and with `apply`, make) the downgrade that funds an unaffordable transfer.
 
     Copying breaks most often on money, not names: the copier's budget drifts from the
     target's (different purchase prices, different sell-on profit), so one day the
     target's swap costs 0.3 more than we can raise. Skipping it leaves us permanently a
-    player behind. Instead: sell one of the target's bench players we also own for the
+    player behind. The fix: sell one of the target's bench players we also own for the
     cheapest like-for-like that covers the shortfall. Diverging on someone the target
     benches costs ~nothing in points as long as we keep mirroring their XI, and the
     cheapest drop keeps the most team value.
@@ -441,19 +441,25 @@ def plan_enabling_downgrades(plan: "PlanResult", *, pending, fix, target_ids, ev
     and its price drop covers the shortfall. Ranked by (smallest drop, smallest FPL
     ep_next loss). Starters are never downgraded - that is the owner's call.
 
-    Mutates `plan` (to_apply, skipped, projected_ids, bank_left) and returns the new
-    downgrade records for the caller to persist after a successful submit.
+    Owner decision 2026-09-21: by default this only RECOMMENDS (`apply=False`): the
+    skip reason names the suggested downgrade, the record carries it, and the owner
+    approves by re-running with ALLOW_DOWNGRADE=1. With `apply=True` the downgrade and
+    the transfer it funds are added to the plan.
+
+    Returns (records, recommendations). `records` are the new downgrade holds for the
+    caller to persist after a successful submit (empty unless applied);
+    `recommendations` describe every suggested downgrade, applied or not.
     """
     unaffordable = [(tr, why) for tr, why in plan.skipped if why == UNAFFORDABLE]
     if not unaffordable:
-        return []
+        return [], []
     if target_ids is None:
         log("[downgrade] target squad unresolvable; cannot choose a downgrade")
-        return []
+        return [], []
     bench_ids = resolve_ids(fix.get("bench") or [], idx, bootstrap)
     if not bench_ids:
         log("[downgrade] the reveal page gave no usable bench; cannot choose a downgrade")
-        return []
+        return [], []
     outs = set()
     for tr in pending:
         m = match_player(idx, tr["out"], bootstrap)
@@ -462,7 +468,7 @@ def plan_enabling_downgrades(plan: "PlanResult", *, pending, fix, target_ids, ev
     squad = set(plan.projected_ids)
     bank = plan.bank_left
     sell = dict(sell_price)
-    records = []
+    records, recommendations = [], []
     for tr, why in unaffordable:
         p_out = match_player(idx, tr["out"], bootstrap, restrict_ids=squad)
         if not p_out or p_out == "ambiguous":
@@ -498,6 +504,22 @@ def plan_enabling_downgrades(plan: "PlanResult", *, pending, fix, target_ids, ev
                     f"downgrade of a shared bench player covers it; leaving it skipped")
                 continue
             _, x, y, x_sell, drop = best
+            suggestion = {"enables": f"{tr['out']} -> {tr['in']}", "shortfall": shortfall,
+                          "out": x["web_name"], "in": y["web_name"], "out_id": x["id"], "in_id": y["id"],
+                          "sell": x_sell, "cost": y["now_cost"], "drop": drop,
+                          "ep_out": _ep(x), "ep_in": _ep(y), "applied": bool(apply)}
+            recommendations.append(suggestion)
+            if not apply:
+                idx_ = plan.skipped.index((tr, why))
+                plan.skipped[idx_] = (tr, f"{why}; {shortfall / 10:.1f} short - suggested: downgrade "
+                                          f"{x['web_name']} ({x_sell / 10:.1f}, on their bench) -> "
+                                          f"{y['web_name']} ({y['now_cost'] / 10:.1f}) to fund it; "
+                                          f"approve with ALLOW_DOWNGRADE=1")
+                log(f"[downgrade] {tr['out']} -> {tr['in']} is {shortfall / 10:.1f} short; SUGGESTED (not "
+                    f"applied): downgrade {x['web_name']} ({x_sell / 10:.1f}, on their bench) -> "
+                    f"{y['web_name']} ({y['now_cost'] / 10:.1f}, ep {_ep(y):.1f} vs {_ep(x):.1f}). "
+                    f"Approve by re-running with ALLOW_DOWNGRADE=1.")
+                continue
             dkey = f"gw{event_id}:{x['web_name']}->{y['web_name']}"
             log(f"[downgrade] {tr['out']} -> {tr['in']} is {shortfall / 10:.1f} short; funding it "
                 f"by downgrading {x['web_name']} ({x_sell / 10:.1f}, on their bench) -> "
@@ -512,6 +534,9 @@ def plan_enabling_downgrades(plan: "PlanResult", *, pending, fix, target_ids, ev
             records.append({"gw": event_id, "held": x["id"], "held_name": x["web_name"],
                             "have": y["id"], "have_name": y["web_name"],
                             "enabled": f"{tr['out']} -> {tr['in']}"})
+        elif not apply:
+            # affordable only thanks to an earlier suggested downgrade that was not applied
+            continue
         # the mirrored transfer itself, now affordable (or already was after a prior downgrade)
         key = f"gw{event_id}:{tr['out']}->{tr['in']}"
         plan.to_apply.append((tr, p_out, p_in, out_sell, p_in["now_cost"], key))
@@ -521,4 +546,4 @@ def plan_enabling_downgrades(plan: "PlanResult", *, pending, fix, target_ids, ev
         sell[p_in["id"]] = p_in["now_cost"]
     plan.projected_ids = squad
     plan.bank_left = bank
-    return records
+    return records, recommendations

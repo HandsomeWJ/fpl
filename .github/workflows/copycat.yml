@@ -44,8 +44,8 @@ on:
         description: "Exclude the target's N most recent transfers from the target squad"
         default: "0"
       allow_downgrade:
-        description: "Fund an unaffordable mirrored transfer by downgrading a shared bench player (1 = yes). Owner decision 2026-09-21: ON on the test account."
-        default: "1"
+        description: "APPLY the suggested enabling downgrade (1 = yes). Default 0 = recommend only: the run reports the downgrade that would fund an unaffordable transfer; dispatch with 1 to approve it."
+        default: "0"
       scheduled:
         description: "Set by the external scheduler: behave like cron (gated). Leave 0 for a manual run."
         default: "0"
@@ -90,7 +90,7 @@ jobs:
           DUMP_REVEAL: ${{ github.event.inputs.dump_reveal || '0' }}
           ALLOW_HITS: ${{ github.event.inputs.allow_hits || '1' }}
           HOLD_LATEST_TRANSFERS: ${{ github.event.inputs.hold_latest || '0' }}
-          ALLOW_DOWNGRADE: ${{ github.event.inputs.allow_downgrade || '1' }}
+          ALLOW_DOWNGRADE: ${{ github.event.inputs.allow_downgrade || '0' }}
           SCHEDULED: ${{ github.event.inputs.scheduled || '0' }}
           SNAPSHOT_FORCE: ${{ github.event.inputs.snapshot_force || '0' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

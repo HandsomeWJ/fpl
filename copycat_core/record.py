@@ -42,6 +42,9 @@ class RunRecord:
     # downgrades still in force from earlier runs: we hold `have` where the target has
     # `held`, and the net diff deliberately does not buy `held` back
     held_downgrades: list = field(default_factory=list)  # {gw,held,have,enabled}
+    # enabling downgrades the planner found for unaffordable transfers; `applied` is False
+    # in the default recommend-only mode (owner approves with ALLOW_DOWNGRADE=1)
+    recommendations: list = field(default_factory=list)  # {enables,out,in,sell,cost,drop,shortfall,applied}
     hits: dict = field(default_factory=lambda: {"count": 0, "points": 0})
     chips_activated: list = field(default_factory=list)
     transfer_chip: Optional[str] = None

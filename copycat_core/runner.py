@@ -248,10 +248,12 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
                           squad_ids=squad_ids, sell_price=sell_price, bank=bank,
                           club_counts=club_counts, already_in=already_in, debug=debug)
     new_downgrades: list = []
-    if settings.allow_downgrade and net_pairs is not None:
-        new_downgrades = plan_enabling_downgrades(
+    if net_pairs is not None:
+        # Always computed so the owner sees the suggestion; only applied with ALLOW_DOWNGRADE=1.
+        new_downgrades, rec.recommendations = plan_enabling_downgrades(
             plan, pending=pending, fix=fix, target_ids=target_ids, event_id=event_id,
-            idx=idx, bootstrap=bootstrap, elements_by_id=elements_by_id, sell_price=sell_price)
+            idx=idx, bootstrap=bootstrap, elements_by_id=elements_by_id, sell_price=sell_price,
+            apply=settings.allow_downgrade)
     to_apply, skipped = plan.to_apply, plan.skipped
     rec.plan_note, rec.pairs = net_note, list(pending) if net_pairs is not None else list(pending)
 
@@ -332,8 +334,14 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
         from .log import report_lines
         title = f"FPL Copycat GW{event_id}: " + \
                 (f"{len(to_apply)} transfer(s) applied" if to_apply else "action needed")
+        suggested = [f"- downgrade {r['out']} ({r['sell'] / 10:.1f}) -> {r['in']} ({r['cost'] / 10:.1f}) "
+                     f"to fund {r['enables']}" for r in rec.recommendations if not r["applied"]]
         body = "\n".join(report_lines + ([""] + ["Skipped (need your decision):"] + new_skips
-                                         if new_skips else []))
+                                         if new_skips else [])
+                         + ([""] + ["Suggested downgrade (NOT applied):"] + suggested
+                            + ["", "Approve: gh workflow run copycat.yml -R HandsomeWJ/fpl "
+                                   "-f allow_downgrade=1   (or the Approve button in Dugout)"]
+                            if suggested else []))
         if dry:
             # A dry run submitted nothing, so an issue saying "applied" would be a lie.
             log(f"[dry-run] would have opened an issue: {title!r} (not opening)")

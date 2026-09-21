@@ -235,14 +235,25 @@ def test_live_run_funds_an_unaffordable_transfer_by_downgrading_a_bench_player(r
     assert deps.state.saved[-1]["downgrades"][0]["have"] == 902
 
 
-def test_downgrade_off_keeps_the_old_skip(reveal_html):
+def test_default_recommends_the_downgrade_instead_of_applying_it(reveal_html):
+    import json
     s = FakeSession(_bs_market(), mk_picks(NEARLY), bank=0, free=2, made=0,
                     chips={"wildcard": "available", "freehit": "played", "bboost": "available", "3xc": "available"})
     deps = _deps(s, reveal_html)
-    run(_settings(ALLOW_DOWNGRADE="0", ALLOW_HITS="1"), deps)
-    assert any("Calvert-Lewin -> Wissa: can't afford it" in l for l in logmod.report_lines) or \
-        deps.notifier.sent[0][0] == "FPL Copycat GW3: action needed"
-    assert not any(l.startswith("[downgrade]") for l in logmod.report_lines)
+    run(_settings(ALLOW_HITS="1"), deps)                                  # ALLOW_DOWNGRADE unset -> recommend
+    lines = logmod.report_lines
+    assert any(l.startswith("[downgrade] Calvert-Lewin -> Wissa is 0.1 short; SUGGESTED (not applied): downgrade Palmer") for l in lines)
+    assert not any(l.startswith("Submitting") for l in lines) and s.posts == []
+    assert {p["element"] for p in s.picks} == set(ids(NEARLY))            # nothing changed
+    title, body = deps.notifier.sent[0]
+    assert title == "FPL Copycat GW3: action needed"
+    assert "Suggested downgrade (NOT applied):" in body
+    assert "- downgrade Palmer (9.5) -> Fodder (9.2) to fund Calvert-Lewin -> Wissa" in body
+    assert "gh workflow run copycat.yml -R HandsomeWJ/fpl -f allow_downgrade=1" in body
+    prev = json.load(open(os.path.join(TMP, "data", "preview", "latest.json")))
+    assert prev["recommendations"][0]["applied"] is False and prev["recommendations"][0]["in"] == "Fodder"
+    assert prev["to_apply"] == [] and "suggested: downgrade Palmer" in prev["skipped"][0]["reason"]
+    assert deps.state.saved[-1]["downgrades"] == []
 
 
 def test_preview_record_marks_downgrade_transfers(reveal_html):
