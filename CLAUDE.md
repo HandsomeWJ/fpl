@@ -351,6 +351,12 @@ core change to the app: tag here (`core-vX.Y.Z`), bump the pin in
 `fpl-dugout/api/pyproject.toml`. The core moves into the app repo at Phase 2.
 
 ### Run records for the app (LIVE from 2026-09-14) — `copycat_core/record.py`
+Ledger files are written for **newly reported** skips only (`rec.new_skips`, core-v0.4.2,
+2026-09-21): before that every gated run repeating the same unaffordable skip wrote a
+file and a persist commit (10/day), and Dugout's ledger showed a wall of "1 skipped".
+Dugout's `/api/ledger` also condenses at read time: issue rows within 30 min of a run row
+for the same GW are dropped as duplicates, identical consecutive rows collapse to one
+with a count, and summaries name the skipped transfer and any suggested downgrade.
 Every run writes `data/preview/latest.json` (the plan it computed: fix reveal, live team,
 net pairs, transfers with prices, hit cost, chip decision, lineup note, skips, result,
 full log); live runs that did or attempted something also write
