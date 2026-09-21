@@ -1,9 +1,9 @@
 {
- "ts": "2026-09-21T22:45:24+00:00",
- "kind": "run",
+ "ts": "2026-09-21T23:00:43+00:00",
+ "kind": "preview",
  "event_id": 6,
  "deadline": "2026-10-10T10:00:00Z",
- "dry": false,
+ "dry": true,
  "entry": 7953181,
  "target": "Tom Dollimore",
  "fix": {
@@ -164,7 +164,7 @@
     "position": 11,
     "purchase_price": 75,
     "selling_price": 76,
-    "now_cost": 78
+    "now_cost": 77
    },
    {
     "id": 564,
@@ -230,12 +230,14 @@
  "transfer_chip": null,
  "chip_held": null,
  "lineup": "lineup already matches",
- "result": "nothing",
+ "result": "dry",
  "early_exit": "",
  "log": [
-  "[snapshot] wrote data/prices/2026-09-21/pre.json.gz (667 players, pre for 2026-09-21)",
-  "[gate] 15min to the price change; running.",
+  "[snapshot] wrote data/prices/2026-09-22/post.json.gz (667 players, post for 2026-09-22)",
+  "[gate] 443.0h to the GW deadline, outside the 6h window; 1439min to the price change, outside 150min. Skipping.",
+  "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 21, 2026, 4:54 p.m.",
+  "[tokens] refreshed FPL access token.",
   "[plan] already matching (holding Bogle for Maguire)",
   "[lineup] lineup already matches"
  ]
