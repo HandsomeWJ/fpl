@@ -284,12 +284,13 @@ def test_repeated_skip_writes_no_second_ledger_file(reveal_html):
     s = FakeSession(_bs_market(), mk_picks(NEARLY), bank=0, free=2, made=0,
                     chips={"wildcard": "available", "freehit": "played", "bboost": "available", "3xc": "available"})
     deps = _deps(s, reveal_html)
+    deps.now_fn = lambda: datetime(2026, 9, 1, 5, 0, tzinfo=timezone.utc)   # unique stamps for this test
     before = set(glob.glob(os.path.join(TMP, "data", "ledger", "*.json")))
     run(_settings(ALLOW_HITS="1"), deps)                       # first time: skip is new -> ledger file
     after_first = set(glob.glob(os.path.join(TMP, "data", "ledger", "*.json")))
     assert len(after_first - before) == 1
     logmod.reset_report()
-    deps.now_fn = lambda: datetime(2026, 9, 1, 4, 15, tzinfo=timezone.utc)
+    deps.now_fn = lambda: datetime(2026, 9, 1, 5, 15, tzinfo=timezone.utc)
     run(_settings(ALLOW_HITS="1"), deps)                       # same skip again -> no new file, no issue
     after_second = set(glob.glob(os.path.join(TMP, "data", "ledger", "*.json")))
     assert after_second == after_first and len(deps.notifier.sent) == 1
