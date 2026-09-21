@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-21T20:30:32+00:00",
+ "ts": "2026-09-21T20:45:26+00:00",
  "kind": "run",
  "event_id": 6,
  "deadline": "2026-10-10T10:00:00Z",
@@ -65,17 +65,17 @@
    "Gabriel",
    "Tarkowski",
    "N.Williams",
+   "Bogle",
    "Saka",
    "Palmer",
    "Rogers",
    "Mbeumo",
    "Gibbs-White",
-   "Calvert-Lewin",
    "João Pedro",
    "Scherpen",
    "McBurnie",
-   "Bogle",
-   "O'Shea"
+   "O'Shea",
+   "Calvert-Lewin"
   ],
   "players": [
    {
@@ -111,9 +111,17 @@
     "now_cost": 50
    },
    {
+    "id": 330,
+    "name": "Bogle",
+    "position": 5,
+    "purchase_price": 46,
+    "selling_price": 46,
+    "now_cost": 46
+   },
+   {
     "id": 12,
     "name": "Saka",
-    "position": 5,
+    "position": 6,
     "purchase_price": 95,
     "selling_price": 95,
     "now_cost": 95
@@ -121,7 +129,7 @@
    {
     "id": 154,
     "name": "Palmer",
-    "position": 6,
+    "position": 7,
     "purchase_price": 95,
     "selling_price": 96,
     "now_cost": 97
@@ -129,7 +137,7 @@
    {
     "id": 40,
     "name": "Rogers",
-    "position": 7,
+    "position": 8,
     "purchase_price": 76,
     "selling_price": 76,
     "now_cost": 77
@@ -137,7 +145,7 @@
    {
     "id": 427,
     "name": "Mbeumo",
-    "position": 8,
+    "position": 9,
     "purchase_price": 79,
     "selling_price": 79,
     "now_cost": 79
@@ -145,18 +153,10 @@
    {
     "id": 480,
     "name": "Gibbs-White",
-    "position": 9,
+    "position": 10,
     "purchase_price": 80,
     "selling_price": 80,
     "now_cost": 80
-   },
-   {
-    "id": 346,
-    "name": "Calvert-Lewin",
-    "position": 10,
-    "purchase_price": 60,
-    "selling_price": 60,
-    "now_cost": 60
    },
    {
     "id": 165,
@@ -183,20 +183,20 @@
     "now_cost": 55
    },
    {
-    "id": 330,
-    "name": "Bogle",
-    "position": 14,
-    "purchase_price": 46,
-    "selling_price": 46,
-    "now_cost": 46
-   },
-   {
     "id": 304,
     "name": "O'Shea",
-    "position": 15,
+    "position": 14,
     "purchase_price": 40,
     "selling_price": 40,
     "now_cost": 40
+   },
+   {
+    "id": 346,
+    "name": "Calvert-Lewin",
+    "position": 15,
+    "purchase_price": 60,
+    "selling_price": 60,
+    "now_cost": 60
    }
   ],
   "chips": {
@@ -229,13 +229,13 @@
  "chips_activated": [],
  "transfer_chip": null,
  "chip_held": null,
- "lineup": "XI/bench reordered, captain Saka, vice Gibbs-White",
+ "lineup": "lineup already matches",
  "result": "nothing",
  "early_exit": "",
  "log": [
-  "[gate] 149min to the price change; running.",
+  "[gate] 135min to the price change; running.",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 21, 2026, 4:54 p.m.",
   "[plan] already matching (holding Bogle for Maguire)",
-  "[lineup] XI/bench reordered, captain Saka, vice Gibbs-White"
+  "[lineup] lineup already matches"
  ]
 }
