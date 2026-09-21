@@ -135,11 +135,19 @@ Tom's except Bogle held in place of Maguire. GW6 deadline 10 Oct (international 
 Tom's reveal lists `WC1` and `WC2` separately - wildcards refresh mid-season.
 `copycat-core` tagged **core-v0.3.0** (downgrades + `Deps.on_record`).
 
-### Enabling downgrades (`plan_enabling_downgrades`, ALLOW_DOWNGRADE, default 1 on test)
-When a net transfer is unaffordable after every other sale: sell one of **Tom's bench
-players we share** for the cheapest available like-for-like whose price drop covers the
-shortfall (tie: smallest FPL `ep_next` loss; status must be 'a'; <=3 per club after the
-whole batch). Starters are never touched - that stays the owner's call. The downgrade is
+### Enabling downgrades (`plan_enabling_downgrades`) — RECOMMEND by default (owner, 2026-09-21)
+When a net transfer is unaffordable after every other sale the planner finds the cheapest
+downgrade of one of **Tom's bench players we share** to an available like-for-like whose
+price drop covers the shortfall (tie: smallest FPL `ep_next` loss; <=3 per club after the
+whole batch). Starters are never touched. **Default `ALLOW_DOWNGRADE=0`: it is only
+suggested** - the skip reason names it, the issue/Telegram body lists it under "Suggested
+downgrade (NOT applied)" with the approval command, and the record carries
+`recommendations` (applied=false). **Approve** = one run with `ALLOW_DOWNGRADE=1`:
+`gh workflow run copycat.yml -R HandsomeWJ/fpl -f allow_downgrade=1`, or Dugout's
+"Approve downgrade" button (live Dugout run when Dugout executes; otherwise a
+workflow_dispatch via optional `GH_DISPATCH_TOKEN`). `core-v0.4.0`. The first case
+(Maguire -> Bogle, 2026-09-21) was applied automatically under the earlier default; the
+hold remains. When applied, the downgrade is
 recorded in `state["downgrades"]` ({gw, held, have, enabled}); later runs **hold** it:
 the net diff swaps `held` for `have` in the target so it does not buy the original back,
 `sync_lineup` substitutes the stand-in into the held player's bench slot, and the hold
