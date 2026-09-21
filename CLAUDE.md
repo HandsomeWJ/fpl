@@ -146,7 +146,7 @@ downgrade (NOT applied)" with the approval command, and the record carries
 `gh workflow run copycat.yml -R HandsomeWJ/fpl -f allow_downgrade=1`, or Dugout's
 "Approve downgrade" button (live Dugout run when Dugout executes; otherwise a
 workflow_dispatch via optional `GH_DISPATCH_TOKEN`). `core-v0.4.0`.
-`GH_DISPATCH_TOKEN` (set 2026-09-21 in Railway) = fine-grained PAT `fpl-dugout-dispatch`:
+`GH_DISPATCH_TOKEN` (set 2026-09-21 in Railway; verified with a dry-run dispatch, run 35573587688) = fine-grained PAT `fpl-dugout-dispatch`:
 repo `HandsomeWJ/fpl` only, Actions read+write, no expiration - the third PAT, kept
 separate from `GH_PAT` (variables) and `fpl-scheduler` (cron-job.org). Needed only while
 Actions is the executor; once `MIRROR_EXECUTE=1` the Approve button runs Dugout itself. The first case
