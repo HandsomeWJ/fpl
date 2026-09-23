@@ -1,9 +1,9 @@
 {
- "ts": "2026-09-23T20:00:42+00:00",
- "kind": "preview",
+ "ts": "2026-09-23T20:30:33+00:00",
+ "kind": "run",
  "event_id": 6,
  "deadline": "2026-10-10T10:00:00Z",
- "dry": true,
+ "dry": false,
  "entry": 7953181,
  "target": "Tom Dollimore",
  "fix": {
@@ -230,13 +230,11 @@
  "transfer_chip": null,
  "chip_held": null,
  "lineup": "lineup already matches",
- "result": "dry",
+ "result": "nothing",
  "early_exit": "",
  "log": [
-  "[gate] 398.0h to the GW deadline, outside the 6h window; 179min to the price change, outside 150min. Skipping.",
-  "[preview] hourly dry run for the app's preview",
+  "[gate] 149min to the price change; running.",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 21, 2026, 4:54 p.m.",
-  "[tokens] refreshed FPL access token.",
   "[plan] already matching (holding Bogle for Maguire)",
   "[lineup] lineup already matches"
  ]
