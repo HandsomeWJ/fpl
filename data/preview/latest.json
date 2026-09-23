@@ -1,5 +1,5 @@
 {
- "ts": "2026-09-23T22:00:39+00:00",
+ "ts": "2026-09-23T22:12:16+00:00",
  "kind": "run",
  "event_id": 6,
  "deadline": "2026-10-10T10:00:00Z",
@@ -233,9 +233,8 @@
  "result": "nothing",
  "early_exit": "",
  "log": [
-  "[gate] 59min to the price change; running.",
+  "[gate] 48min to the price change; running.",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'available', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[], last updated: Sept. 21, 2026, 4:54 p.m.",
-  "[tokens] refreshed FPL access token.",
   "[plan] already matching (holding Bogle for Maguire)",
   "[lineup] lineup already matches"
  ]
