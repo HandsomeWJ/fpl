@@ -107,7 +107,8 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
     rec.fix = {k: fix.get(k) for k in ("updated", "gw", "chips", "transfers", "squad",
                                        "starters", "bench", "captain", "vice")}
 
-    tm = TokenManager(deps.tokens, settings.fpl_refresh_seed, deps.notifier, http=deps.http)
+    tm = TokenManager(deps.tokens, settings.fpl_refresh_seed, deps.notifier, http=deps.http,
+                      reseed_hint=settings.reseed_hint)
     s = deps.session_factory(tm.access_token(), settings.fpl_cookie)
     out.persist_failed = tm.persist_failed
 

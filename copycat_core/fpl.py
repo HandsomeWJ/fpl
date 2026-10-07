@@ -25,6 +25,19 @@ FPL = "https://fantasy.premierleague.com"
 PL_TOKEN_URL = "https://account.premierleague.com/as/token"
 PL_CLIENT_ID = "bfcbaf69-aade-4c1b-8f00-c1cb8a193030"
 
+RESEED_HINT = "update the FPL_REFRESH_TOKEN secret"
+# account.premierleague.com sits behind an API gateway that occasionally answers
+# 504 {"message": "Network error communicating with endpoint"} (seen 2026-10-07). That
+# is an outage, not a dead token: retry briefly, then report it as transient.
+TRANSIENT_STATUSES = frozenset({429, 500, 502, 503, 504})
+RETRY_DELAYS = (2, 5)        # seconds before the 2nd and 3rd attempt
+
+
+class TokenEndpointUnavailable(RuntimeError):
+    """The token endpoint answered 5xx/429 or not at all. A credential problem looks
+    different (400 invalid_grant), so this must never be reported as one: the stored
+    refresh token was not exchanged and the next run simply retries it."""
+
 
 def refresh_access_token(refresh_token: str, http=requests):
     return http.post(PL_TOKEN_URL,
@@ -40,9 +53,11 @@ class TokenManager:
     """Return a valid access token, refreshing and persisting as needed."""
 
     def __init__(self, store: TokenStore, seed: Optional[str], notifier: Notifier,
-                 http=requests, now_fn=time.time):
+                 http=requests, now_fn=time.time, sleep_fn=time.sleep,
+                 reseed_hint: str = RESEED_HINT):
         self.store, self.seed, self.notifier = store, seed, notifier
-        self.http, self.now_fn = http, now_fn
+        self.http, self.now_fn, self.sleep_fn = http, now_fn, sleep_fn
+        self.reseed_hint = reseed_hint
         # Set when a rotated refresh token could not be persisted; the run still does
         # its work but should exit non-zero so the failure shows red as well as in an
         # issue.
@@ -60,7 +75,7 @@ class TokenManager:
         if self.seed and self.seed not in candidates:
             candidates.append(self.seed)
         for rt in candidates:
-            r = refresh_access_token(rt, http=self.http)
+            r = self._refresh(rt)
             if r.status_code < 400:
                 j = r.json()
                 new = {"access_token": j["access_token"],
@@ -86,9 +101,32 @@ class TokenManager:
             log(f"[tokens] refresh attempt failed: {r.status_code} {r.text[:200]}")
         if candidates:
             raise RuntimeError("FPL token refresh failed for all stored refresh tokens - "
-                               "log in to fantasy.premierleague.com again and update the "
-                               "FPL_REFRESH_TOKEN secret.")
+                               "log in to fantasy.premierleague.com again and "
+                               f"{self.reseed_hint}.")
         return None
+
+    def _refresh(self, rt: str):
+        """One token exchange, retried through transient endpoint failures. Returns the
+        final response (a 4xx means THIS token is dead) or raises
+        TokenEndpointUnavailable, without ever trying the next candidate."""
+        attempts = 1 + len(RETRY_DELAYS)
+        why = ""
+        for i in range(attempts):
+            if i:
+                self.sleep_fn(RETRY_DELAYS[i - 1])
+            try:
+                r = refresh_access_token(rt, http=self.http)
+            except requests.RequestException as e:
+                why = f"{type(e).__name__}: {e}"
+            else:
+                if r.status_code not in TRANSIENT_STATUSES:
+                    return r
+                why = f"HTTP {r.status_code} {r.text[:120]}"
+            log(f"[tokens] token endpoint unavailable, attempt {i + 1}/{attempts}: {why}")
+        raise TokenEndpointUnavailable(
+            f"PL token endpoint unavailable after {attempts} attempts ({why}). Not a "
+            "credential problem: the stored refresh token was not exchanged and the next "
+            "run retries it. Re-seed only if that run fails with invalid_grant.")
 
 
 def fpl_session(token: Optional[str], fpl_cookie: Optional[str] = None) -> requests.Session:

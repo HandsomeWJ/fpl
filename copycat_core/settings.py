@@ -50,6 +50,9 @@ class Settings:
     # When a clock tick is gated out, still compute a dry-run plan once an hour so the
     # app's preview stays fresh. PREVIEW_HOURLY=0 turns it off.
     preview_hourly: bool = True
+    # What the owner must do when every stored refresh token is dead. The Actions job
+    # re-seeds from a secret; the app overrides this with its own instructions.
+    reseed_hint: str = "update the FPL_REFRESH_TOKEN secret"
 
     @property
     def is_clock(self) -> bool:

@@ -135,6 +135,15 @@ Tom's except Bogle held in place of Maguire. GW6 deadline 10 Oct (international 
 Tom's reveal lists `WC1` and `WC2` separately - wildcards refresh mid-season.
 `copycat-core` tagged **core-v0.3.0** (downgrades + `Deps.on_record`).
 
+**2026-10-07 (core-v0.4.3): token-endpoint outages are transient, not dead tokens.**
+A Dugout preview tick got `504 {"message": "Network error communicating with endpoint"}`
+from `account.premierleague.com/as/token`, and `TokenManager` reported it as "all stored
+refresh tokens failed - log in again". The token was fine; the next tick refreshed
+normally. Now `TokenManager._refresh` retries 3x (2s, 5s) on 429/5xx/network errors and
+raises `TokenEndpointUnavailable` (never tries the seed, never says "log in"). Dead
+tokens (400 invalid_grant) still raise the re-seed message, worded by
+`Settings.reseed_hint` (Actions: the secret; Dugout passes its own panel instructions).
+
 ### Enabling downgrades (`plan_enabling_downgrades`) — RECOMMEND by default (owner, 2026-09-21)
 When a net transfer is unaffordable after every other sale the planner finds the cheapest
 downgrade of one of **Tom's bench players we share** to an available like-for-like whose
@@ -460,6 +469,14 @@ in a *secret* would be masked, but needs libsodium/PyNaCl to write.
 
 - GW2 (deadline 2026-08-28T17:30Z) passed with no Tom transfers to mirror, so nothing
   was missed — but see the scheduling note below: the deadline window had zero runs.
+
+### Token endpoint 5xx is NOT a dead token (2026-10-07)
+`account.premierleague.com` sits behind an API gateway that sometimes answers
+`504 {"message": "Network error communicating with endpoint"}`. The stored refresh
+token is not exchanged by that, so the next run refreshes normally. `TokenManager`
+(core 0.4.3) retries 2s/5s and raises `TokenEndpointUnavailable`; only a 4xx
+(`invalid_grant`) means re-seed. Do not re-seed on a 5xx: a fresh login from a private
+window is harmless, but it is wasted effort and the panic message was the bug.
 
 ### Schedule (changed 2026-08-25)
 The cron fires **every 15 min at :07/:22/:37/:52**, but `should_run_now()` in
