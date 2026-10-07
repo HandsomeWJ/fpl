@@ -325,6 +325,19 @@ Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run ref
 **Switch-over runbook (not yet done):** one full GW of shadow agreement -> disable the
 cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> watch the first
 gated window. Never run both executors live: double transfers cost real hits.
+**Failed ticks (2026-10-07, Dugout + core-v0.4.3):** `run_once` stores a tick that dies
+before producing a RunRecord as `MirrorRun(kind="error", result="failed", summary=<error>)`
+with `{"error", "log"}` in the record, so it shows in the panel's recent ticks and as the
+last tick; `agree` stays NULL so it never counts in the agreement figure. A
+`TokenEndpointUnavailable` (PL token endpoint 429/5xx/network after 3 attempts at 2s/5s)
+pages Telegram only when the gate was open (a live/gated tick lost), never from the hourly
+preview; every other exception pages as before. `core_settings` passes
+`reseed_hint="seed a new token in Dugout (Mirror panel -> Owner actions -> Seed token)"`,
+and the core's "token rotation could not be saved" notify is suppressed because Dugout
+sends its own wording. `/api/mirror/runs/{id}` returns the record through `shape_preview`
+(+ `log`, `error`) - the raw RunRecord has `to_apply`, the drawer reads `will_transfer`, so
+opening a tick used to crash. `/api/mirror/status.core_version` (importlib metadata of
+`copycat-core`) is the field to poll after a Railway deploy.
 **Shadow mode LIVE since 2026-09-21 15:11 SGT.** Owner set MIRROR_ENABLED, TOKEN_KEY,
 FIX_COOKIE, TELEGRAM_BOT_TOKEN (+ TELEGRAM_CHAT_ID 205139173 found via the bot's
 getUpdates) in Railway and seeded the FPL token from a private window; the assistant
