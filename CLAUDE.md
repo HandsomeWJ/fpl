@@ -325,6 +325,12 @@ Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run ref
 **Switch-over runbook (not yet done):** one full GW of shadow agreement -> disable the
 cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> watch the first
 gated window. Never run both executors live: double transfers cost real hits.
+**Ticks table (2026-10-07):** `/api/mirror/runs` collapses identical consecutive ticks
+(key: kind, dry, GW, result, summary, agree) into one row with `count`/`first_sgt`
+(`raw=true` for every tick), and the row summary is `tick_summary` = what the run would
+do (`plan_note` when nothing applies) instead of the bare result "dry"; old rows are
+backfilled at startup (`backfill_tick_summaries`). The owner found a wall of identical
+"shadow · 6 · DRY · dry · agrees" rows useless.
 **Failed ticks (2026-10-07, Dugout + core-v0.4.3):** `run_once` stores a tick that dies
 before producing a RunRecord as `MirrorRun(kind="error", result="failed", summary=<error>)`
 with `{"error", "log"}` in the record, so it shows in the panel's recent ticks and as the
