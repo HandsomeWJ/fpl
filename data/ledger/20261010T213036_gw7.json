@@ -1,0 +1,251 @@
+{
+ "ts": "2026-10-10T21:30:36+00:00",
+ "kind": "run",
+ "event_id": 7,
+ "deadline": "2026-10-17T10:00:00Z",
+ "dry": false,
+ "entry": 7953181,
+ "target": "Tom Dollimore",
+ "fix": {
+  "updated": "Oct. 10, 2026, 9:21 p.m.",
+  "gw": 7,
+  "chips": {
+   "WC1": "active",
+   "WC2": "available",
+   "TC": "gw 4",
+   "FH": "gw 3",
+   "BB": "gw 1"
+  },
+  "transfers": [
+   {
+    "out": "Gabriel",
+    "in": "De Cuyper"
+   },
+   {
+    "out": "N.Williams",
+    "in": "Gvardiol"
+   },
+   {
+    "out": "Mbeumo",
+    "in": "Groß"
+   },
+   {
+    "out": "McBurnie",
+    "in": "Wissa"
+   }
+  ],
+  "squad": [
+   "Raya",
+   "De Cuyper",
+   "Tarkowski",
+   "Gvardiol",
+   "Maguire",
+   "Saka",
+   "Palmer",
+   "Rogers",
+   "Groß",
+   "Gibbs-White",
+   "João Pedro",
+   "Scherpen",
+   "Wissa",
+   "O'Shea",
+   "Calvert-Lewin"
+  ],
+  "starters": [
+   "Raya",
+   "De Cuyper",
+   "Tarkowski",
+   "Gvardiol",
+   "Maguire",
+   "Saka",
+   "Palmer",
+   "Rogers",
+   "Groß",
+   "Gibbs-White",
+   "João Pedro"
+  ],
+  "bench": [
+   "Scherpen",
+   "Wissa",
+   "O'Shea",
+   "Calvert-Lewin"
+  ],
+  "captain": "Saka",
+  "vice": "Palmer"
+ },
+ "team": {
+  "bank": 34,
+  "free_transfers": 1,
+  "made": 0,
+  "squad": [
+   "Raya",
+   "De Cuyper",
+   "Tarkowski",
+   "Gvardiol",
+   "Maguire",
+   "Saka",
+   "Palmer",
+   "Rogers",
+   "Groß",
+   "Gibbs-White",
+   "João Pedro",
+   "Scherpen",
+   "Wissa",
+   "O'Shea",
+   "Calvert-Lewin"
+  ],
+  "players": [
+   {
+    "id": 1,
+    "name": "Raya",
+    "position": 1,
+    "purchase_price": 60,
+    "selling_price": 60,
+    "now_cost": 61
+   },
+   {
+    "id": 115,
+    "name": "De Cuyper",
+    "position": 2,
+    "purchase_price": 50,
+    "selling_price": 50,
+    "now_cost": 50
+   },
+   {
+    "id": 229,
+    "name": "Tarkowski",
+    "position": 3,
+    "purchase_price": 60,
+    "selling_price": 61,
+    "now_cost": 62
+   },
+   {
+    "id": 391,
+    "name": "Gvardiol",
+    "position": 4,
+    "purchase_price": 57,
+    "selling_price": 57,
+    "now_cost": 57
+   },
+   {
+    "id": 418,
+    "name": "Maguire",
+    "position": 5,
+    "purchase_price": 48,
+    "selling_price": 48,
+    "now_cost": 48
+   },
+   {
+    "id": 12,
+    "name": "Saka",
+    "position": 6,
+    "purchase_price": 95,
+    "selling_price": 95,
+    "now_cost": 96
+   },
+   {
+    "id": 154,
+    "name": "Palmer",
+    "position": 7,
+    "purchase_price": 95,
+    "selling_price": 96,
+    "now_cost": 97
+   },
+   {
+    "id": 40,
+    "name": "Rogers",
+    "position": 8,
+    "purchase_price": 76,
+    "selling_price": 77,
+    "now_cost": 78
+   },
+   {
+    "id": 124,
+    "name": "Groß",
+    "position": 9,
+    "purchase_price": 59,
+    "selling_price": 59,
+    "now_cost": 59
+   },
+   {
+    "id": 480,
+    "name": "Gibbs-White",
+    "position": 10,
+    "purchase_price": 80,
+    "selling_price": 80,
+    "now_cost": 80
+   },
+   {
+    "id": 165,
+    "name": "João Pedro",
+    "position": 11,
+    "purchase_price": 75,
+    "selling_price": 76,
+    "now_cost": 77
+   },
+   {
+    "id": 564,
+    "name": "Scherpen",
+    "position": 12,
+    "purchase_price": 45,
+    "selling_price": 45,
+    "now_cost": 45
+   },
+   {
+    "id": 464,
+    "name": "Wissa",
+    "position": 13,
+    "purchase_price": 62,
+    "selling_price": 62,
+    "now_cost": 62
+   },
+   {
+    "id": 304,
+    "name": "O'Shea",
+    "position": 14,
+    "purchase_price": 40,
+    "selling_price": 40,
+    "now_cost": 40
+   },
+   {
+    "id": 346,
+    "name": "Calvert-Lewin",
+    "position": 15,
+    "purchase_price": 60,
+    "selling_price": 60,
+    "now_cost": 60
+   }
+  ],
+  "chips": {
+   "bboost": "unavailable",
+   "3xc": "played",
+   "wildcard": "active",
+   "freehit": "played"
+  }
+ },
+ "plan_note": "already matching",
+ "pairs": [],
+ "to_apply": [],
+ "skipped": [],
+ "new_skips": [],
+ "held_downgrades": [],
+ "recommendations": [],
+ "hits": {
+  "count": 0,
+  "points": 0
+ },
+ "chips_activated": [],
+ "transfer_chip": "wildcard",
+ "chip_held": null,
+ "lineup": "lineup already matches",
+ "result": "nothing",
+ "early_exit": "",
+ "log": [
+  "[gate] 89min to the price change; running.",
+  "Fix reveal for Tom Dollimore: chips={'WC1': 'active', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[{'out': 'Gabriel', 'in': 'De Cuyper'}, {'out': 'N.Williams', 'in': 'Gvardiol'}, {'out': 'Mbeumo', 'in': 'Groß'}, {'out': 'McBurnie', 'in': 'Wissa'}], last updated: Oct. 10, 2026, 9:21 p.m.",
+  "Chip wildcard already active on my team.",
+  "[plan] already matching",
+  "Playing chip wildcard: projected squad matches the target manager exactly.",
+  "[lineup] lineup already matches"
+ ]
+}
