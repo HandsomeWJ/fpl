@@ -72,14 +72,5 @@
   "gw5:Szoboszlai->Gibbs-White:can't afford it even after the other transfers free up money",
   "gw6:Szoboszlai->Gibbs-White:can't afford it even after the other transfers free up money"
  ],
- "downgrades": [
-  {
-   "gw": 6,
-   "held": 418,
-   "held_name": "Maguire",
-   "have": 330,
-   "have_name": "Bogle",
-   "enabled": "Szoboszlai -> Gibbs-White"
-  }
- ]
+ "downgrades": []
 }
