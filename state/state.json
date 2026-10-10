@@ -25,7 +25,12 @@
   "gw4:Canvot->Tarkowski",
   "gw4:Ndiaye->Saka",
   "gw6:Maguire->Bogle",
-  "gw6:Szoboszlai->Gibbs-White"
+  "gw6:Szoboszlai->Gibbs-White",
+  "gw7:Gabriel->De Cuyper",
+  "gw7:Bogle->Gvardiol",
+  "gw7:N.Williams->Maguire",
+  "gw7:McBurnie->Wissa",
+  "gw7:Mbeumo->Gro\u00df"
  ],
  "chips_done": [
   "gw4:3xc"
