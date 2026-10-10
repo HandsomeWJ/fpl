@@ -1,9 +1,9 @@
 {
- "ts": "2026-10-10T22:45:29+00:00",
- "kind": "run",
+ "ts": "2026-10-10T23:00:46+00:00",
+ "kind": "preview",
  "event_id": 7,
  "deadline": "2026-10-17T10:00:00Z",
- "dry": false,
+ "dry": true,
  "entry": 7953181,
  "target": "Tom Dollimore",
  "fix": {
@@ -125,7 +125,7 @@
     "position": 4,
     "purchase_price": 57,
     "selling_price": 57,
-    "now_cost": 57
+    "now_cost": 58
    },
    {
     "id": 418,
@@ -165,7 +165,7 @@
     "position": 9,
     "purchase_price": 59,
     "selling_price": 59,
-    "now_cost": 59
+    "now_cost": 60
    },
    {
     "id": 480,
@@ -197,7 +197,7 @@
     "position": 13,
     "purchase_price": 62,
     "selling_price": 62,
-    "now_cost": 62
+    "now_cost": 63
    },
    {
     "id": 304,
@@ -238,12 +238,14 @@
  "transfer_chip": "wildcard",
  "chip_held": null,
  "lineup": "lineup already matches",
- "result": "nothing",
+ "result": "dry",
  "early_exit": "",
  "log": [
-  "[snapshot] wrote data/prices/2026-10-10/pre.json.gz (667 players, pre for 2026-10-10)",
-  "[gate] 15min to the price change; running.",
+  "[snapshot] wrote data/prices/2026-10-11/post.json.gz (667 players, post for 2026-10-11)",
+  "[gate] 155.0h to the GW deadline, outside the 6h window; 1439min to the price change, outside 150min. Skipping.",
+  "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'active', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[{'out': 'Gabriel', 'in': 'De Cuyper'}, {'out': 'N.Williams', 'in': 'Gvardiol'}, {'out': 'Mbeumo', 'in': 'Groß'}, {'out': 'McBurnie', 'in': 'Wissa'}], last updated: Oct. 10, 2026, 9:21 p.m.",
+  "[tokens] refreshed FPL access token.",
   "Chip wildcard already active on my team.",
   "[plan] already matching",
   "Playing chip wildcard: projected squad matches the target manager exactly.",
