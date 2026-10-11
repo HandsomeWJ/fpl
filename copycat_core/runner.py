@@ -148,6 +148,8 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
                 # reads them from the preview record. Tenths of GBPm, like FPL.
                 "players": [{"id": p["element"], "name": elements_by_id[p["element"]]["web_name"],
                              "position": p.get("position"),
+                             "is_captain": bool(p.get("is_captain")),
+                             "is_vice_captain": bool(p.get("is_vice_captain")),
                              "purchase_price": p.get("purchase_price"),
                              "selling_price": p.get("selling_price"),
                              "now_cost": elements_by_id[p["element"]].get("now_cost")} for p in picks],

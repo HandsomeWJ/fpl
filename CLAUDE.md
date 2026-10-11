@@ -325,6 +325,15 @@ Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run ref
 **Switch-over runbook (not yet done):** one full GW of shadow agreement -> disable the
 cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> watch the first
 gated window. Never run both executors live: double transfers cost real hits.
+**Analytics tabs follow my-team (2026-10-11, Dugout + core-v0.4.4):** the Transfers and
+Squad tabs built the squad from the public picks endpoint, which shows the 15 as of the
+LAST deadline, so Tom's GW7 wildcard batch (5 transfers, mirrored 04:30 SGT) was invisible
+there until the GW7 deadline. `api/app/squad.py` now takes the squad from the freshest
+run record (Dugout tick or Actions preview, <36h, 15 players): `team.players` carries
+selling/purchase prices and, from core 0.4.4, `is_captain`/`is_vice_captain`; an active
+chip (`team.chips[x] == "active"`) is overlaid on the public chip history, which lists a
+chip only after its deadline. Public picks stay the fallback and the source for other
+entries. Records before 0.4.4 get the target's armbands when the lineup was synced.
 **Ticks table (2026-10-07):** `/api/mirror/runs` collapses identical consecutive ticks
 (key: kind, dry, GW, result, summary, agree) into one row with `count`/`first_sgt`
 (`raw=true` for every tick), and the row summary is `tick_summary` = what the run would
