@@ -1,5 +1,5 @@
 {
- "ts": "2026-10-11T05:00:43+00:00",
+ "ts": "2026-10-11T06:00:50+00:00",
  "kind": "preview",
  "event_id": 7,
  "deadline": "2026-10-17T10:00:00Z",
@@ -99,6 +99,8 @@
     "id": 1,
     "name": "Raya",
     "position": 1,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 60,
     "selling_price": 60,
     "now_cost": 61
@@ -107,6 +109,8 @@
     "id": 115,
     "name": "De Cuyper",
     "position": 2,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 50,
     "selling_price": 50,
     "now_cost": 50
@@ -115,6 +119,8 @@
     "id": 229,
     "name": "Tarkowski",
     "position": 3,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 60,
     "selling_price": 61,
     "now_cost": 62
@@ -123,6 +129,8 @@
     "id": 391,
     "name": "Gvardiol",
     "position": 4,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 57,
     "selling_price": 57,
     "now_cost": 58
@@ -131,6 +139,8 @@
     "id": 418,
     "name": "Maguire",
     "position": 5,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 48,
     "selling_price": 48,
     "now_cost": 48
@@ -139,6 +149,8 @@
     "id": 12,
     "name": "Saka",
     "position": 6,
+    "is_captain": true,
+    "is_vice_captain": false,
     "purchase_price": 95,
     "selling_price": 95,
     "now_cost": 96
@@ -147,6 +159,8 @@
     "id": 154,
     "name": "Palmer",
     "position": 7,
+    "is_captain": false,
+    "is_vice_captain": true,
     "purchase_price": 95,
     "selling_price": 96,
     "now_cost": 97
@@ -155,6 +169,8 @@
     "id": 40,
     "name": "Rogers",
     "position": 8,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 76,
     "selling_price": 77,
     "now_cost": 78
@@ -163,6 +179,8 @@
     "id": 124,
     "name": "Groß",
     "position": 9,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 59,
     "selling_price": 59,
     "now_cost": 60
@@ -171,6 +189,8 @@
     "id": 480,
     "name": "Gibbs-White",
     "position": 10,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 80,
     "selling_price": 80,
     "now_cost": 80
@@ -179,6 +199,8 @@
     "id": 165,
     "name": "João Pedro",
     "position": 11,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 75,
     "selling_price": 76,
     "now_cost": 77
@@ -187,6 +209,8 @@
     "id": 564,
     "name": "Scherpen",
     "position": 12,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 45,
     "selling_price": 45,
     "now_cost": 45
@@ -195,6 +219,8 @@
     "id": 464,
     "name": "Wissa",
     "position": 13,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 62,
     "selling_price": 62,
     "now_cost": 63
@@ -203,6 +229,8 @@
     "id": 304,
     "name": "O'Shea",
     "position": 14,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 40,
     "selling_price": 40,
     "now_cost": 40
@@ -211,6 +239,8 @@
     "id": 346,
     "name": "Calvert-Lewin",
     "position": 15,
+    "is_captain": false,
+    "is_vice_captain": false,
     "purchase_price": 60,
     "selling_price": 60,
     "now_cost": 60
@@ -241,7 +271,7 @@
  "result": "dry",
  "early_exit": "",
  "log": [
-  "[gate] 149.0h to the GW deadline, outside the 6h window; 1079min to the price change, outside 150min. Skipping.",
+  "[gate] 148.0h to the GW deadline, outside the 6h window; 1019min to the price change, outside 150min. Skipping.",
   "[preview] hourly dry run for the app's preview",
   "Fix reveal for Tom Dollimore: chips={'WC1': 'active', 'WC2': 'available', 'TC': 'gw 4', 'FH': 'gw 3', 'BB': 'gw 1'}, transfers=[{'out': 'Gabriel', 'in': 'De Cuyper'}, {'out': 'N.Williams', 'in': 'Gvardiol'}, {'out': 'Mbeumo', 'in': 'Groß'}, {'out': 'McBurnie', 'in': 'Wissa'}], last updated: Oct. 10, 2026, 9:21 p.m.",
   "[tokens] refreshed FPL access token.",
