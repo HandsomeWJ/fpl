@@ -125,6 +125,23 @@ still reported success. `sync_lineup` now re-sends the active my-team chip
 (`team_chip`), and chip activation checks **live** status instead of skipping on
 `state["chips_done"]`, so an undone chip is redone rather than trusted as done.
 
+## Status (2026-10-11) — SWITCH-OVER DONE: Dugout executes, Actions idle
+Executed 2026-10-11 ~19:10 SGT after 3 weeks of shadow agreement (39/40, the miss being
+the post-execution artifact) and a GW7 wildcard batch planned identically by both:
+1. `copycat.yml`: `schedule:` removed (comment kept), `dry_run` input default now "1"
+   (a stray manual dispatch cannot submit while Dugout is live; Dugout's Approve dispatch
+   passes `dry_run=0` explicitly).
+2. cron-job.org job "FPL copycat dispatch (every 15 min)" set Inactive (last firing 19:00 SGT).
+3. Railway `MIRROR_EXECUTE=1` deployed; Primary's Execute switch on in the Accounts panel;
+   state re-imported from Actions first. `/api/mirror/status` -> `mode: live`.
+First live window: Mon 12 Oct 04:35-06:50 SGT (price change 07:00 SGT). Compact Telegram
+reports come from Dugout now (`store_record`), the hourly dry preview keeps running.
+Since the Actions preview is frozen, Dugout ignores previews older than 2h
+(`ACTIONS_FRESH_H`) so no false disagreements. **Revert:** Execute off in the Accounts
+panel (or `MIRROR_EXECUTE=0`), then re-enable the cron-job.org job; never both live.
+Railway builder OOM (exit 137 on `npx vite build`) hit again on the prep deploy - a plain
+Redeploy of the failed build succeeded.
+
 ## Status (2026-09-21) — enabling downgrades live; Phase 2 shipped in shadow mode
 GW5 matched Tom exactly (32 v 32, no hits). Szoboszlai -> Gibbs-White had been skipped
 since 2026-09-15 (sell 7.0 + bank 0.7 < 8.0): budget divergence, the most common way
