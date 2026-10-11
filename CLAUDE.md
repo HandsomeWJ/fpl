@@ -342,6 +342,16 @@ Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run ref
 **Switch-over runbook (not yet done):** one full GW of shadow agreement -> disable the
 cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> the account's
 Execute switch in Dugout's Accounts panel -> watch the first gated window. Never run both executors live: double transfers cost real hits.
+**Coming-up alerts (2026-10-11, Dugout `alerts.py`):** Telegram only reported what Dugout
+DID; with a shadow main account the owner also needs what is COMING. Two deduped alerts
+from `store_record` (every tick, dry included): *target move* - fingerprint of the
+reveal (`fix.squad` sorted, captain, vice, chips) in kv `target:<target_entry>`, first
+sighting silent, then one message per change with out/in, armbands, chip status and a
+line per account (live -> "applies at <next window>" via `alerts.next_window`, shadow ->
+"apply it yourself"); partial scrapes (<15 names) ignored. *shadow plan* - fingerprint
+of to_apply/chip/held/skips in kv `shadowplan:<account>`, one message per distinct plan,
+never for live accounts or the Actions account while Actions runs. Formats in
+`telegram_format.target_move/shadow_plan`.
 **Accounts (2026-10-11, Dugout):** one Dugout serves several FPL teams. `api/app/accounts.py`
 + `accounts` table (id slug, label, entry, target_entry/name, allow_hits, allow_downgrade,
 allow_transfer_chip, execute, enabled, is_default, telegram_chat_id); `mirror_runs.account`
