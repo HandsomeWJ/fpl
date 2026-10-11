@@ -323,8 +323,21 @@ Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run ref
 `MIRROR_ALLOW_HITS`, `MIRROR_ALLOW_DOWNGRADE`, `TOKEN_KEY`, `FIX_COOKIE`,
 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Endpoints `/api/mirror/*`.
 **Switch-over runbook (not yet done):** one full GW of shadow agreement -> disable the
-cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> watch the first
-gated window. Never run both executors live: double transfers cost real hits.
+cron-job.org job AND the workflow cron -> `MIRROR_EXECUTE=1` + Deploy -> the account's
+Execute switch in Dugout's Accounts panel -> watch the first gated window. Never run both executors live: double transfers cost real hits.
+**Accounts (2026-10-11, Dugout):** one Dugout serves several FPL teams. `api/app/accounts.py`
++ `accounts` table (id slug, label, entry, target_entry/name, allow_hits, allow_downgrade,
+allow_transfer_chip, execute, enabled, is_default, telegram_chat_id); `mirror_runs.account`
+and `ledger_entries.account` (nullable columns added by `db.ensure_columns`, no Alembic);
+kv keys `state:<id>` / `tokens:<id>` (bootstrap renames the legacy `state`/`tokens` rows to
+the default account `primary`, created from the env on first boot). Every port, setting and
+record in `mirror.py` is per account; `run_all` ticks each enabled account; the account
+whose entry equals `FPL_ENTRY` is "the Actions account" (only one compared with the Actions
+preview, owns imported Actions ledger rows, can dispatch the workflow). Live per account =
+`MIRROR_EXECUTE` AND `account.execute` (env stays the master). `?account=<id>` on every
+endpoint (default account when absent; `routers/common.account_or_404`); the web client
+appends it from localStorage and remounts the tabs on switch. Phase 4 (main account) is now
+"add an account" rather than "switch FPL_ENTRY": hits off, execute off, seed its own token.
 **Analytics tabs follow my-team (2026-10-11, Dugout + core-v0.4.4):** the Transfers and
 Squad tabs built the squad from the public picks endpoint, which shows the 15 as of the
 LAST deadline, so Tom's GW7 wildcard batch (5 transfers, mirrored 04:30 SGT) was invisible
