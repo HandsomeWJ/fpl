@@ -1,30 +1,16 @@
 name: FPL Copycat
 
 on:
-  schedule:
-    # FALLBACK ONLY. GitHub drops most cron firings (GW4 deadline day: 3 of ~48, none
-    # in the final 3h). The primary clock is an external scheduler (cron-job.org)
-    # dispatching this workflow every 15 min with inputs.scheduled=1 - see CLAUDE.md.
-    #
-    # Fires every 15 min, but copycat.py's should_run_now() gate makes almost every
-    # run a no-op. Real work happens only in the 150min before the FPL price change
-    # and in the 6h before a gameweek deadline. In the owner's clock (SGT):
-    #   summer  price change 07:00 SGT -> work 04:37..06:52 SGT
-    #   winter  price change 08:00 SGT -> work 05:37..07:52 SGT
-    # For 2026/27 prices move at MIDNIGHT UK time (the old 01:30 GMT / 02:30 BST
-    # rule is gone); the gate computes that from Europe/London so it tracks DST.
-    #
-    # NOT on the hour: GitHub delays scheduled runs under load and :00 is peak
-    # congestion. Measured on this repo - "0 * * * *" delivered 13% of firings and
-    # dropped EVERY slot in the GW2 deadline window; "*/15" delivered ~54%. Firing
-    # often at off-peak minutes is the only defence, and the gate keeps it cheap
-    # (a skipped run is one unauthenticated GET, no token rotation spent).
-    - cron: "7,22,37,52 * * * *"
+  # schedule: DISABLED 2026-10-11 (switch-over) - Dugout (fpl-dugout on Railway) is the
+  # executor now and the cron-job.org dispatcher is off. workflow_dispatch stays for
+  # manual runs; its dry_run default is 1 so a stray dispatch cannot submit while Dugout
+  # is live. Never run both executors live: double transfers cost real hits.
+  # The old fallback cron was "7,22,37,52 * * * *" (why those minutes: CLAUDE.md, Scheduler).
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Dry run (1 = don't submit anything)"
-        default: "0"
+        description: "Dry run (1 = don't submit anything). Default 1 since the switch-over: pass 0 only if Dugout is NOT executing"
+        default: "1"
       check_pat:
         description: "Only probe whether GH_PAT can write Actions variables (1 = yes)"
         default: "0"
