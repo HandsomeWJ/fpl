@@ -125,6 +125,14 @@ still reported success. `sync_lineup` now re-sends the active my-team chip
 (`team_chip`), and chip activation checks **live** status instead of skipping on
 `state["chips_done"]`, so an undone chip is redone rather than trusted as done.
 
+## Status (2026-10-17) — both accounts live in Dugout
+Main account (`main`, entry 18739, the owner's real team) added 2026-10-11 in shadow and
+switched to Execute by the owner on 2026-10-17 04:3x SGT inside the open price window;
+the 04:50 tick applied Tom's 6-transfer wildcard reshuffle (0 hits, wildcard active) and
+set captain Haaland. Primary did the same at 04:35. Dugout's first week as executor:
+Wed 14 Oct Maguire -> Vuskovic, Sat 17 Oct the six-pack on both. Main policy: hits OFF
+(skips needing a -4 are reported, not taken), downgrades recommend. Actions remains idle.
+
 ## Status (2026-10-11) — SWITCH-OVER DONE: Dugout executes, Actions idle
 Executed 2026-10-11 ~19:10 SGT after 3 weeks of shadow agreement (39/40, the miss being
 the post-execution artifact) and a GW7 wildcard batch planned identically by both:
