@@ -125,6 +125,20 @@ still reported success. `sync_lineup` now re-sends the active my-team chip
 (`team_chip`), and chip activation checks **live** status instead of skipping on
 `state["chips_done"]`, so an undone chip is redone rather than trusted as done.
 
+## Status (2026-10-21) — Actions decommissioned
+Clean-up 2026-10-21 ~01:00 SGT: cron-job.org job DELETED; the three fine-grained PATs
+revoked by the owner (`fpl-copycat-variables` = GH_PAT, `fpl-scheduler`,
+`fpl-dugout-dispatch`); repo secret `GH_PAT` and variable `FPL_TOKENS` removed; Railway
+`GH_DISPATCH_TOKEN` removed. Still in the repo: secrets `FPL_REFRESH_TOKEN`, `FPL_COOKIE`,
+`FIX_COOKIE`, `FPL_ENTRY` (inert) and the workflow itself (manual `workflow_dispatch`,
+`dry_run` default 1 - it cannot authenticate any more). Dugout is the only executor.
+**To revive Actions as an emergency fallback:** generate a new PAT with Variables
+read+write on this repo -> secret `GH_PAT`; log in to FPL in a private window and set
+`FPL_REFRESH_TOKEN`; create variable `FPL_TOKENS` is NOT needed (the first run creates
+it); turn Dugout's account Execute off; restore the `schedule:` cron (git history,
+"7,22,37,52 * * * *") or re-create the cron-job.org dispatcher (see Scheduler). Never
+both executors live.
+
 ## Status (2026-10-17) — both accounts live in Dugout
 Main account (`main`, entry 18739, the owner's real team) added 2026-10-11 in shadow and
 switched to Execute by the owner on 2026-10-17 04:3x SGT inside the open price window;
