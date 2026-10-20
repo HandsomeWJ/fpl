@@ -129,9 +129,8 @@ still reported success. `sync_lineup` now re-sends the active my-team chip
 Clean-up 2026-10-21 ~01:00 SGT: cron-job.org job DELETED; the three fine-grained PATs
 revoked by the owner (`fpl-copycat-variables` = GH_PAT, `fpl-scheduler`,
 `fpl-dugout-dispatch`); repo secret `GH_PAT` and variable `FPL_TOKENS` removed; Railway
-`GH_DISPATCH_TOKEN` removed. Still in the repo: secrets `FPL_REFRESH_TOKEN`, `FPL_COOKIE`,
-`FIX_COOKIE`, `FPL_ENTRY` (inert) and the workflow itself (manual `workflow_dispatch`,
-`dry_run` default 1 - it cannot authenticate any more). Dugout is the only executor.
+`GH_DISPATCH_TOKEN` removed. The repo now holds NO secrets or variables at all (the
+owner had the last four removed too); only the workflow file remains, for history. Dugout is the only executor.
 **To revive Actions as an emergency fallback:** generate a new PAT with Variables
 read+write on this repo -> secret `GH_PAT`; log in to FPL in a private window and set
 `FPL_REFRESH_TOKEN`; create variable `FPL_TOKENS` is NOT needed (the first run creates
