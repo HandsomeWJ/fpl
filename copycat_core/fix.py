@@ -109,7 +109,9 @@ def parse_reveal(html: str, name: str) -> dict:
 
 
 def fetch_reveal_html(cookie: str, http=requests) -> str:
-    r = http.get(FIX_URL, headers={"User-Agent": UA, "Cookie": cookie}, timeout=60)
+    from .http import get_with_retry       # here, not at the top: fpl.py imports this module
+    r = get_with_retry(lambda: http.get(FIX_URL, headers={"User-Agent": UA, "Cookie": cookie}, timeout=60),
+                       "Fix reveal page")
     r.raise_for_status()
     return r.text
 

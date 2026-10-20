@@ -18,6 +18,7 @@ from typing import Optional
 import requests
 
 from .fix import UA
+from .http import RETRY_DELAYS, TRANSIENT_STATUSES, UpstreamUnavailable, get_with_retry
 from .log import log
 from .ports import Notifier, TokenStore
 
@@ -26,17 +27,13 @@ PL_TOKEN_URL = "https://account.premierleague.com/as/token"
 PL_CLIENT_ID = "bfcbaf69-aade-4c1b-8f00-c1cb8a193030"
 
 RESEED_HINT = "update the FPL_REFRESH_TOKEN secret"
-# account.premierleague.com sits behind an API gateway that occasionally answers
-# 504 {"message": "Network error communicating with endpoint"} (seen 2026-10-07). That
-# is an outage, not a dead token: retry briefly, then report it as transient.
-TRANSIENT_STATUSES = frozenset({429, 500, 502, 503, 504})
-RETRY_DELAYS = (2, 5)        # seconds before the 2nd and 3rd attempt
 
 
-class TokenEndpointUnavailable(RuntimeError):
-    """The token endpoint answered 5xx/429 or not at all. A credential problem looks
-    different (400 invalid_grant), so this must never be reported as one: the stored
-    refresh token was not exchanged and the next run simply retries it."""
+class TokenEndpointUnavailable(UpstreamUnavailable):
+    """account.premierleague.com answered 5xx/429 or not at all (its gateway says
+    504 "Network error communicating with endpoint" now and then). A credential problem
+    looks different (400 invalid_grant), so this must never be reported as one: the
+    stored refresh token was not exchanged and the next run simply retries it."""
 
 
 def refresh_access_token(refresh_token: str, http=requests):
@@ -150,13 +147,13 @@ def fpl_session(token: Optional[str], fpl_cookie: Optional[str] = None) -> reque
 
 
 def get_bootstrap(s) -> dict:
-    r = s.get(f"{FPL}/api/bootstrap-static/", timeout=60)
+    r = get_with_retry(lambda: s.get(f"{FPL}/api/bootstrap-static/", timeout=60), "FPL bootstrap")
     r.raise_for_status()
     return r.json()
 
 
 def get_my_team(s, entry: int) -> dict:
-    r = s.get(f"{FPL}/api/my-team/{entry}/", timeout=60)
+    r = get_with_retry(lambda: s.get(f"{FPL}/api/my-team/{entry}/", timeout=60), "FPL my-team")
     if r.status_code in (401, 403):
         raise RuntimeError(f"FPL auth failed ({r.status_code}): {r.text[:200]}")
     r.raise_for_status()
@@ -164,7 +161,7 @@ def get_my_team(s, entry: int) -> dict:
 
 
 def get_my_gw_transfers(s, entry: int, event: int) -> list:
-    r = s.get(f"{FPL}/api/entry/{entry}/transfers/", timeout=60)
+    r = get_with_retry(lambda: s.get(f"{FPL}/api/entry/{entry}/transfers/", timeout=60), "FPL transfers")
     if r.status_code != 200:
         return []
     return [t for t in r.json() if t.get("event") == event]
@@ -176,7 +173,8 @@ def public_next_deadline(http=requests) -> Optional[datetime]:
     Deliberately auth-free: the gate must be able to decide whether to skip without
     spending a refresh-token rotation on a run that will do nothing.
     """
-    r = http.get(f"{FPL}/api/bootstrap-static/", headers={"User-Agent": UA}, timeout=30)
+    r = get_with_retry(lambda: http.get(f"{FPL}/api/bootstrap-static/", headers={"User-Agent": UA}, timeout=30),
+                       "FPL bootstrap (public)")
     r.raise_for_status()
     events = r.json()["events"]
     e = next((x for x in events if x["is_next"]), None) or \

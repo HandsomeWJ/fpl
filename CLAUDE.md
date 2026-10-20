@@ -546,6 +546,15 @@ in a *secret* would be masked, but needs libsodium/PyNaCl to write.
 - GW2 (deadline 2026-08-28T17:30Z) passed with no Tom transfers to mirror, so nothing
   was missed — but see the scheduling note below: the deadline window had zero runs.
 
+### Upstream hiccups retry inside the tick (2026-10-20, core-v0.4.5)
+FPL's `my-team` answered 500 once (2026-10-20 14:05 SGT) and the reveal site timed out
+twice (2026-10-18); each paged the owner as "failed". `copycat_core/http.py`
+(`get_with_retry`, `UpstreamUnavailable`, 3 attempts at 2s/5s on 429/5xx/connection
+errors) now wraps bootstrap, my-team, transfers, the public deadline read and the reveal
+fetch; `TokenEndpointUnavailable` subclasses `UpstreamUnavailable`. Dugout catches the
+base class: skipped tick in the panel, Telegram only when a gated tick was lost. 4xx are
+never retried (403 = auth problem, raised as before).
+
 ### Token endpoint 5xx is NOT a dead token (2026-10-07)
 `account.premierleague.com` sits behind an API gateway that sometimes answers
 `504 {"message": "Network error communicating with endpoint"}`. The stored refresh
