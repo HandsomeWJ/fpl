@@ -564,6 +564,17 @@ in a *secret* would be masked, but needs libsodium/PyNaCl to write.
 - GW2 (deadline 2026-08-28T17:30Z) passed with no Tom transfers to mirror, so nothing
   was missed — but see the scheduling note below: the deadline window had zero runs.
 
+### Dugout runs on SQLite (2026-10-31) - Postgres retired to save memory
+Railway bills resident memory by the minute and it is ~97% of the bill; Postgres held
+~90-145 MB for a 23 MB database (Railway's PG 18 template: max_connections 500, 128 MB
+shared_buffers). `fpl-dugout/api/app/db.py`: `UTCDateTime` (aware UTC on both engines),
+SQLite pragmas (WAL, foreign_keys, busy_timeout 30 s), a one-off startup migration
+(`DATABASE_URL=sqlite:////data/dugout.db` + `MIGRATE_FROM_URL=${{Postgres.DATABASE_URL}}`;
+copies every table to `.partial`, verifies counts and `mirror_kv` byte for byte, renames,
+then writes `db:frozen` into Postgres; refuses if `/data` is not a mount point; runs once),
+frozen-copy guards (no ticks, token verify/seed, snapshots or imports), and a nightly
+`backup_sqlite` to `/data/backups` (7 kept). Rollback recipe in the fpl-dugout README.
+
 ### The run record shows the squad the run LEFT (2026-10-31, core-v0.4.6)
 `RunRecord.team` used to be read at the start of a run only, so an applied run recorded
 the squad from before its own transfers, and after a deadline (ticks early-exit with
