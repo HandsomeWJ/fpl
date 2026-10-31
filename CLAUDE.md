@@ -564,6 +564,16 @@ in a *secret* would be masked, but needs libsodium/PyNaCl to write.
 - GW2 (deadline 2026-08-28T17:30Z) passed with no Tom transfers to mirror, so nothing
   was missed — but see the scheduling note below: the deadline window had zero runs.
 
+### The run record shows the squad the run LEFT (2026-10-31, core-v0.4.6)
+`RunRecord.team` used to be read at the start of a run only, so an applied run recorded
+the squad from before its own transfers, and after a deadline (ticks early-exit with
+"deadline passed" and read no squad) Dugout's Squad/Transfers tabs fell back to the
+previous GW's public picks for hours (seen 2026-10-31 19:05 SGT). Now `runner.team_record`
+builds it, and after a live run that changed anything (transfers or lineup) step 3c
+re-reads my-team and stores it with `after_run: true` (bank already net of the run).
+Dugout: `squad._mirror_record` walks back to the newest record with 15 players, and the
+compact Telegram's "bank after" uses the stored bank as-is when `after_run` is set.
+
 ### Upstream hiccups retry inside the tick (2026-10-20, core-v0.4.5)
 FPL's `my-team` answered 500 once (2026-10-20 14:05 SGT) and the reveal site timed out
 twice (2026-10-18); each paged the owner as "failed". `copycat_core/http.py`

@@ -90,6 +90,27 @@ def _finish(deps: Deps, state: dict, dry: bool, changed: bool,
     log(f"Done. changed={changed} dry_run={dry}")
 
 
+def team_record(team: dict, elements_by_id: dict, after_run: bool = False) -> dict:
+    """The squad as a run record carries it. Per-player prices and armbands are private
+    (my-team only), so the app reads them from here. Tenths of GBPm, like FPL.
+    `after_run` marks a squad re-read after this run changed it (bank already net)."""
+    picks = team["picks"]
+    rec = {"bank": team["transfers"]["bank"], "free_transfers": team["transfers"].get("limit"),
+           "made": team["transfers"].get("made", 0),
+           "squad": [elements_by_id[p["element"]]["web_name"] for p in picks],
+           "players": [{"id": p["element"], "name": elements_by_id[p["element"]]["web_name"],
+                        "position": p.get("position"),
+                        "is_captain": bool(p.get("is_captain")),
+                        "is_vice_captain": bool(p.get("is_vice_captain")),
+                        "purchase_price": p.get("purchase_price"),
+                        "selling_price": p.get("selling_price"),
+                        "now_cost": elements_by_id[p["element"]].get("now_cost")} for p in picks],
+           "chips": {c["name"]: c.get("status_for_entry") for c in team.get("chips", [])}}
+    if after_run:
+        rec["after_run"] = True
+    return rec
+
+
 def run(settings: Settings, deps: Deps) -> RunOutcome:
     if settings.entry is None:
         raise RuntimeError("FPL_ENTRY is not set.")
@@ -142,18 +163,7 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
     squad_ids = {p["element"] for p in picks}
     elements_by_id = {e["id"]: e for e in bootstrap["elements"]}
     idx = build_player_index(bootstrap)
-    rec.team = {"bank": bank, "free_transfers": free_transfers, "made": made,
-                "squad": [elements_by_id[p["element"]]["web_name"] for p in picks],
-                # per-player prices are private (my-team only); the app's value tracker
-                # reads them from the preview record. Tenths of GBPm, like FPL.
-                "players": [{"id": p["element"], "name": elements_by_id[p["element"]]["web_name"],
-                             "position": p.get("position"),
-                             "is_captain": bool(p.get("is_captain")),
-                             "is_vice_captain": bool(p.get("is_vice_captain")),
-                             "purchase_price": p.get("purchase_price"),
-                             "selling_price": p.get("selling_price"),
-                             "now_cost": elements_by_id[p["element"]].get("now_cost")} for p in picks],
-                "chips": {k: v.get("status_for_entry") for k, v in my_chips.items()}}
+    rec.team = team_record(team, elements_by_id)
 
     if debug:
         log(f"[debug] event_id={event_id} fix_gw={fix['gw']} bank={bank} "
@@ -321,6 +331,17 @@ def run(settings: Settings, deps: Deps) -> RunOutcome:
         log(f"[lineup] {lineup_note}")
         rec.lineup = lineup_note
         changed = changed or lineup_changed
+
+    # ---------- 3c) the record describes the squad as this run LEFT it
+    # The app's Squad/Transfers views and Telegram's bank line read rec.team; after a
+    # live change the start-of-run picture is stale until the next tick re-reads it,
+    # and after a deadline the next ticks exit before reading it at all.
+    if changed and not dry:
+        try:
+            rec.team = team_record(get_my_team(s, entry), elements_by_id, after_run=True)
+        except Exception as e:
+            log(f"[record] could not re-read the squad after the run ({e}); "
+                "the record shows it as the run found it")
 
     # ---------- 4) report skips (once per skip)
     rec.skipped = [{"out": tr["out"], "in": tr["in"], "reason": reason} for tr, reason in skipped]

@@ -294,3 +294,30 @@ def test_repeated_skip_writes_no_second_ledger_file(reveal_html):
     run(_settings(ALLOW_HITS="1"), deps)                       # same skip again -> no new file, no issue
     after_second = set(glob.glob(os.path.join(TMP, "data", "ledger", "*.json")))
     assert after_second == after_first and len(deps.notifier.sent) == 1
+
+
+def test_a_live_run_records_the_squad_it_left_and_a_dry_run_the_squad_it_found(reveal_html):
+    """2026-10-31: after a live run the app showed the squad from before that run's own
+    transfers until the next tick; after a deadline no tick re-read it for hours."""
+    got = []
+    s = FakeSession(mk_bootstrap(), mk_picks(OUR_SQUAD), bank=0, free=2, made=5)
+    deps = _deps(s, reveal_html)
+    deps.on_record = got.append
+    run(_settings(), deps)
+    rec = got[-1]
+    assert rec.result == "applied" and rec.team.get("after_run") is True
+    owned = {p["id"] for p in rec.team["players"]}
+    assert owned == {p["element"] for p in s.picks} and len(owned) == 15
+    for t in rec.to_apply:
+        assert t["in_id"] in owned and t["out_id"] not in owned
+    assert rec.team["made"] == s.made
+    caps = [p for p in rec.team["players"] if p["is_captain"]]
+    assert len(caps) == 1 and caps[0]["name"] == rec.fix["captain"]
+
+    got.clear()
+    s2 = FakeSession(mk_bootstrap(), mk_picks(OUR_SQUAD), bank=0, free=2, made=5)
+    deps2 = _deps(s2, reveal_html)
+    deps2.on_record = got.append
+    run(_settings(DRY_RUN="1"), deps2)
+    assert "after_run" not in got[-1].team
+    assert {p["id"] for p in got[-1].team["players"]} == set(ids(OUR_SQUAD))
