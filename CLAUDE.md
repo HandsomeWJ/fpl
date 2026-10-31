@@ -574,6 +574,14 @@ copies every table to `.partial`, verifies counts and `mirror_kv` byte for byte,
 then writes `db:frozen` into Postgres; refuses if `/data` is not a mount point; runs once),
 frozen-copy guards (no ticks, token verify/seed, snapshots or imports), and a nightly
 `backup_sqlite` to `/data/backups` (7 kept). Rollback recipe in the fpl-dugout README.
+**Cut over 2026-10-31 19:53 SGT** (volume + both variables in ONE Railway deploy, timed
+before the 20:05 token refresh): 2 accounts, 237 ledger rows, 11 kv rows, 800 ticks,
+95 snapshots, 63,322 player prices copied in ~1 s; Postgres got `db:frozen`; the 20:05
+tick refreshed BOTH accounts' FPL tokens on SQLite (chain intact). Then `MIGRATE_FROM_URL`
+removed and the Postgres deployment removed (offline, volume kept: redeploy the image
+`ghcr.io/railwayapp-templates/postgres-ssl:18` to restore). Railway volume backups need
+Pro; on Hobby the in-app nightly copies (same volume) are the only backups. A service
+with a volume deploys with ~1 min downtime: deploy only outside the gated windows.
 
 ### The run record shows the squad the run LEFT (2026-10-31, core-v0.4.6)
 `RunRecord.team` used to be read at the start of a run only, so an applied run recorded
