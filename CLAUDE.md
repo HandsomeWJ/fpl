@@ -582,6 +582,12 @@ removed and the Postgres deployment removed (offline, volume kept: redeploy the 
 `ghcr.io/railwayapp-templates/postgres-ssl:18` to restore). Railway volume backups need
 Pro; on Hobby the in-app nightly copies (same volume) are the only backups. A service
 with a volume deploys with ~1 min downtime: deploy only outside the gated windows.
+**Weekly off-volume backup (2026-10-31):** `fpl-dugout/api/app/backups.py` gzips the
+newest online copy and sends it via the run-report bot (`sendDocument`) to
+`TELEGRAM_CHAT_ID` every Sunday 20:45 SGT, plus a catch-up 2 min after boot when a week
+has passed (kv `backup:telegram:last`). No usable secret inside (tokens are Fernet with
+`TOKEN_KEY`, env only). Restore = put the .db on the volume and reuse the startup
+migration with a SQLite `MIGRATE_FROM_URL` (README, Database).
 
 ### The run record shows the squad the run LEFT (2026-10-31, core-v0.4.6)
 `RunRecord.team` used to be read at the start of a run only, so an applied run recorded
