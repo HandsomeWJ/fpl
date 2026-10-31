@@ -354,7 +354,12 @@ reports what Actions does while it is the executor). `Deps.on_record`
 stores every RunRecord in `mirror_runs` with `agree` = plan equals the Actions preview
 (pairs + to_apply + early_exit); live acted runs also feed the ledger (`mirror/...`).
 Ticks at :05 :20 :35 :50 UTC (Actions dispatches at :00 :15 :30 :45), same gate +
-hourly preview as `cli()`; Dugout-native snapshots at :03 :18 :33 :48 into Postgres
+hourly preview as `cli()`, plus a **final call 5 min before each deadline** (owner request
+2026-10-31: FPL deadlines fall on quarter hours, so the last regular tick lands 10 min
+before; `scheduler.plan_final_call` reads the public deadline every 15 min and at boot and
+schedules an APScheduler date job `final_call` at deadline - 5 min, misfire grace 90 s;
+it is an ordinary gated `run_all`). All ticks, the final call and the admin buttons share
+`mirror._RUN_LOCK` (wait up to 120 s) so live runs and token refreshes never overlap; Dugout-native snapshots at :03 :18 :33 :48 into Postgres
 (needed once Actions stops snapshotting). On first tick the dedup state is copied from
 this repo's `state/state.json` (incl. held downgrades) so shadow plans match.
 Env: `MIRROR_ENABLED`, `MIRROR_EXECUTE` (0 = shadow: dry runs only, live run refused),
